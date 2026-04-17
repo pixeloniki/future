@@ -8,7 +8,7 @@ html,body{margin:0;height:100%;background:#05070a;color:#fff;font-family:-apple-
 #app{display:flex;flex-direction:column;height:100%}
 #top{height:60%;position:relative;background:radial-gradient(circle at center,#102030,#03060a 70%)}
 #bottom{height:40%;position:relative;background:#000;overflow:hidden;border-top:1px solid rgba(0,242,255,.35)}
-canvas,video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+canvas,video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(1)}
 #overlay{pointer-events:none}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:#020406;z-index:99}
 .spinner{width:56px;height:56px;border-radius:50%;border:3px solid rgba(0,242,255,.15);border-top-color:#00f2ff;animation:spin 1s linear infinite}
@@ -20,13 +20,13 @@ button{padding:12px 18px;border-radius:16px;border:none;background:#00f2ff;color
 </style>
 </head>
 <body>
-<div id='loading'><div class='spinner'></div><div>Initializing Vision Sensors...</div><button id='startBtn'>Enable Camera</button><div id='msg' class='small'></div></div>
+<div id='loading'><div class='spinner'></div><div>Production Vision Engine...</div><button id='startBtn'>Enable Camera</button><div id='msg' class='small'></div></div>
 <div id='app'>
-<section id='top'><div class='title'>SALONICAS VISION OS · LIVE SPACE CONTROL</div></section>
+<section id='top'><div class='title'>SALONICAS VISION OS · LIVE SPACE CONTROL • PRO MODE</div></section>
 <section id='bottom'>
 <video id='video' playsinline autoplay muted></video>
 <canvas id='overlay'></canvas>
-<div class='brand'>🇬🇷 Salonicas • AI Vision</div>
+<div class='brand'>🇬🇷 🇬🇷 Salonicas • Production Vision AI</div>
 </section>
 </div>
 <script src='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js'></script>
@@ -46,13 +46,13 @@ const tex=new THREE.TextureLoader().load('https://threejs.org/examples/textures/
 const mat=new THREE.MeshStandardMaterial({map:tex,bumpMap:bump,bumpScale:.04,metalness:.2,roughness:.8}); earth=new THREE.Mesh(new THREE.SphereGeometry(1,64,64),mat); scene.add(earth);
 window.addEventListener('resize',()=>{renderer.setSize(top.clientWidth,top.clientHeight);camera3d.aspect=top.clientWidth/top.clientHeight;camera3d.updateProjectionMatrix();}); animate();}
 function animate(){requestAnimationFrame(animate); if(earth){earth.rotation.y+=0.003; earth.rotation.x += (rotY-earth.rotation.x)*0.06; earth.rotation.z += (rotX-earth.rotation.z)*0.06;} camera3d.position.z += (targetZ-camera3d.position.z)*0.08; renderer.render(scene,camera3d);}
-async function startCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:false}); video.srcObject=stream; await video.play(); sizeOverlay(); loading.style.display='none'; initHands(); initThree();}catch(e){msg.textContent='Camera access denied or unavailable.'; console.error(e);}}
-function initHands(){const hands=new Hands({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`}); hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:.72,minTrackingConfidence:.72,selfieMode:true}); hands.onResults(onResults); const cam=new Camera(video,{onFrame:async()=>{await hands.send({image:video});},width:960,height:540}); cam.start();}
-function onResults(results){ctx.clearRect(0,0,overlay.width,overlay.height); ctx.drawImage(results.image,0,0,overlay.width,overlay.height);
-const hands=results.multiHandLandmarks||[]; ctx.lineWidth=2; ctx.shadowBlur=10; ctx.shadowColor='#00f2ff';
-for(const lm of hands){drawConnectors(ctx,lm,HAND_CONNECTIONS,{color:'#00f2ff',lineWidth:2}); drawLandmarks(ctx,lm,{color:'#ffffff',radius:4});}
-if(hands[0]){const p=hands[0][8]; rotX=(p.x-.5)*1.8; rotY=(p.y-.5)*1.8;}
-if(hands.length===2){const a=hands[0][8], b=hands[1][8]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(pinchBase===null) pinchBase=d; const delta=d-pinchBase; targetZ=Math.max(1.6,Math.min(7,3.2-delta*10));} else {pinchBase=null;}
+async function startCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:60,max:60}},audio:false}); video.srcObject=stream; await video.play(); sizeOverlay(); loading.style.display='none'; initHands(); initThree();}catch(e){msg.textContent='Camera access denied or unavailable.'; console.error(e);}}
+function initHands(){const hands=new Hands({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`}); hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:.88,minTrackingConfidence:.88,selfieMode:false}); hands.onResults(onResults); const cam=new Camera(video,{onFrame:async()=>{await hands.send({image:video});},width:1280,height:720}); cam.start();}
+function onResults(results){ctx.clearRect(0,0,overlay.width,overlay.height);
+const hands=results.multiHandLandmarks||[]; ctx.lineWidth=2; ctx.shadowBlur=14; ctx.shadowColor='#00f2ff'; ctx.lineCap='round'; ctx.lineJoin='round';
+for(const lm of hands){drawConnectors(ctx,lm,HAND_CONNECTIONS,{color:'#00f2ff',lineWidth:4}); drawLandmarks(ctx,lm,{color:'#ffffff',radius:6});}
+if(hands[0]){const p=hands[0][8]; rotX += ((((p.x-.5)*1.6)-rotX)*0.22); rotY += ((((p.y-.5)*1.6)-rotY)*0.22);}
+if(hands.length===2){const a=hands[0][8], b=hands[1][8]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(pinchBase===null) pinchBase=d; const delta=d-pinchBase; targetZ=Math.max(1.4,Math.min(8,3.2-delta*12));} else {pinchBase=null;}
 }
 startBtn.onclick=startCamera; window.addEventListener('load',()=>{if(navigator.mediaDevices?.getUserMedia) startCamera();});
 </script>
