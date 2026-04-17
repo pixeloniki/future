@@ -2,125 +2,129 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Salonicas Vision OS</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <title>Salonicas Vision OS v7.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; color: #00f2ff; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
         
-        /* Layout: Το ένα κάτω από το άλλο */
-        #container { display: flex; flex-direction: column; height: 100vh; }
+        #main-container { display: flex; flex-direction: column; height: 100vh; }
 
-        /* Πάνω μέρος: Η Γη */
-        #space-view { flex: 1; position: relative; border-bottom: 2px solid #00f2ff; overflow: hidden; }
+        /* Πάνω μέρος: Η Γη (Space) */
+        #space-window { flex: 1.5; position: relative; background: radial-gradient(circle, #001d3d 0%, #000 100%); border-bottom: 3px solid #00f2ff; }
         
-        /* Κάτω μέρος: Η Κάμερα */
-        #camera-view { height: 40%; position: relative; background: #050505; }
+        /* Κάτω μέρος: Η Κάμερα (Sensors) */
+        #camera-window { flex: 1; position: relative; background: #050505; display: flex; justify-content: center; }
 
-        #input_video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        #video_in { height: 100%; width: auto; transform: scaleX(-1); display: none; }
+        #sensor_out { height: 100%; width: auto; transform: scaleX(-1); z-index: 5; }
 
-        /* UI Elements */
-        .overlay-text { position: absolute; top: 10px; left: 10px; font-size: 0.8rem; z-index: 10; pointer-events: none; }
-        .salonicas-logo { position: absolute; bottom: 10px; right: 20px; text-align: right; z-index: 20; pointer-events: none; }
-        .salonicas-logo h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; text-shadow: 0 0 10px #00f2ff; }
-        .flag-img { width: 30px; margin-top: 5px; }
+        /* Branding & UI */
+        .salonicas-header { position: absolute; top: 20px; left: 20px; color: #00f2ff; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 10px #00f2ff; }
+        .salonicas-brand { position: absolute; bottom: 20px; right: 20px; text-align: right; }
+        .salonicas-brand h1 { color: #fff; margin: 0; font-size: 1.8rem; text-shadow: 0 0 15px #00f2ff; }
+        .gr-flag { width: 35px; border: 1px solid white; margin-top: 5px; }
         
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 100; }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #00f2ff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(0,242,255,0.1); border-top: 5px solid #00f2ff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div id="loading">ΕΝΕΡΓΟΠΟΙΗΣΗ ΑΙΣΘΗΤΗΡΩΝ SALONICAS...</div>
+<div id="loader">
+    <div class="spinner"></div>
+    <p>ΣΥΣΤΗΜΑ SALONICAS: ΕΚΚΙΝΗΣΗ ΑΙΣΘΗΤΗΡΩΝ...</p>
+</div>
 
-<div id="container">
-    <div id="space-view">
-        <div class="overlay-text">ΠΡΟΒΟΛΗ ΔΙΑΣΤΗΜΑΤΟΣ : ΕΝΕΡΓΗ</div>
+<div id="main-container">
+    <div id="space-window">
+        <div class="salonicas-header">SPACE VIEW PROTOCOL</div>
     </div>
     
-    <div id="camera-view">
-        <video id="input_video" playsinline></video>
-        <canvas id="output_canvas"></canvas>
-        <div class="salonicas-logo">
+    <div id="camera-window">
+        <video id="video_in" playsinline></video>
+        <canvas id="sensor_out"></canvas>
+        <div class="salonicas-brand">
             <h1>CREATED BY SALONICAS</h1>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Flag_of_Greece.svg" class="flag-img">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Flag_of_Greece.svg" class="gr-flag">
         </div>
     </div>
 </div>
 
 <script>
-    const videoElement = document.getElementById(«input_video»);
-    const canvasElement = document.getElementById(«output_canvas»);
-    const canvasCtx = canvasElement.getContext(«2d»);
-    const loading = document.getElementById(«loading»);
+    const video = document.getElementById(«video_in»);
+    const canvas = document.getElementById(«sensor_out»);
+    const ctx = canvas.getContext(«2d»);
+    const loader = document.getElementById(«loader»);
 
-    // --- THREE.JS SETUP (ΓΗ) ---
+    // --- 3D EARTH SETUP ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
-    document.getElementById(«space-view»).appendChild(renderer.domElement);
+    document.getElementById(«space-window»).appendChild(renderer.domElement);
 
-    const earthGeom = new THREE.SphereGeometry(2, 64, 64);
-    const earthTex = new THREE.TextureLoader().load(«https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg»);
-    const earthMat = new THREE.MeshPhongMaterial({ map: earthTex });
-    const earth = new THREE.Mesh(earthGeom, earthMat);
+    const earthGeo = new THREE.SphereGeometry(2, 64, 64);
+    const earthMap = new THREE.TextureLoader().load(«https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg»);
+    const earthMat = new THREE.MeshPhongMaterial({ map: earthMap });
+    const earth = new THREE.Mesh(earthGeo, earthMat);
     scene.add(earth);
-    
-    const light = new THREE.DirectionalLight(0xffffff, 1.2);
+
+    const light = new THREE.DirectionalLight(0xffffff, 1.5);
     light.position.set(5, 3, 5);
     scene.add(light);
-    scene.add(new THREE.AmbientLight(0x333333));
+    scene.add(new THREE.AmbientLight(0x222222));
     camera.position.z = 5;
 
-    // --- GESTURE LOGIC ---
-    let initialPinchDist = null;
-    let currentZoom = 5;
+    // --- SENSORS LOGIC ---
+    let initialZoomDist = null;
+    let baseZoom = 5;
 
-    function onResults(results) {
-        loading.style.display = «none»;
-        canvasElement.width = videoElement.offsetWidth;
-        canvasElement.height = videoElement.offsetHeight;
+    function onHandResults(results) {
+        loader.style.display = «none»;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
         
-        canvasCtx.save();
-        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (results.multiHandLandmarks) {
             for (const landmarks of results.multiHandLandmarks) {
-                // Σχεδίαση Αισθητήρων
-                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: «#00f2ff», lineWidth: 3});
-                drawLandmarks(canvasCtx, landmarks, {color: «#ffffff», lineWidth: 1, radius: 4});
+                // Σχεδίαση Αισθητήρων στα δάχτυλα
+                drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: «#00f2ff», lineWidth: 4});
+                drawLandmarks(ctx, landmarks, {color: «#ffffff», lineWidth: 1, radius: 5});
 
-                // Κίνηση Γης
-                const palm = landmarks[9];
-                earth.position.x = (palm.x - 0.5) * -8;
-                earth.position.y = (palm.y - 0.5) * -6;
-                earth.rotation.y += 0.02;
+                // Κίνηση Γης Πάνω-Κάτω-Δεξιά-Αριστερά
+                const point = landmarks[9]; // Middle palm
+                earth.position.x = (point.x - 0.5) * -10;
+                earth.position.y = (point.y - 0.5) * -8;
+                earth.rotation.y += 0.01;
             }
 
-            // Zoom με δύο χέρια (Pinch)
+            // Pinch Zoom (Δύο χέρια)
             if (results.multiHandLandmarks.length === 2) {
-                const h1 = results.multiHandLandmarks[0][9];
-                const h2 = results.multiHandLandmarks[1][9];
-                const dist = Math.sqrt(Math.pow(h1.x - h2.x, 2) + Math.pow(h1.y - h2.y, 2));
+                const p1 = results.multiHandLandmarks[0][9];
+                const p2 = results.multiHandLandmarks[1][9];
+                const dist = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 
-                if (initialPinchDist === null) {
-                    initialPinchDist = dist;
+                if (initialZoomDist === null) {
+                    initialZoomDist = dist;
                 } else {
-                    const zoomFactor = initialPinchDist / dist;
-                    camera.position.z = Math.max(3, Math.min(10, currentZoom * zoomFactor));
+                    let factor = initialZoomDist / dist;
+                    camera.position.z = Math.max(2.5, Math.min(10, baseZoom * factor));
                 }
             } else {
-                initialPinchDist = null;
-                currentZoom = camera.position.z;
+                initialZoomDist = null;
+                baseZoom = camera.position.z;
             }
         }
-        canvasCtx.restore();
+        ctx.restore();
     }
 
-    // --- CAMERA & SENSORS START ---
+    // --- INITIALIZATION ---
     const hands = new Hands({locateFile: (file) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
     }});
@@ -128,29 +132,28 @@
     hands.setOptions({
         maxNumHands: 2,
         modelComplexity: 1,
-        minDetectionConfidence: 0.6,
-        minTrackingConfidence: 0.6
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
     });
-    hands.onResults(onResults);
+    hands.onResults(onHandResults);
 
-    const cameraHelper = new Camera(videoElement, {
+    const cam = new Camera(video, {
         onFrame: async () => {
-            await hands.send({image: videoElement});
+            await hands.send({image: video});
         },
         width: 1280,
         height: 720
     });
 
-    // Ζητάμε άδεια και ξεκινάμε
-    cameraHelper.start().catch(err => {
-        alert(«Η κάμερα δεν είναι διαθέσιμη. Παρακαλώ δώστε άδεια στον browser.»);
+    cam.start().catch(() => {
+        loader.innerHTML = «<p style='color:red'>ΣΦΑΛΜΑ: ΠΑΡΑΚΑΛΩ ΕΠΙΤΡΕΨΤΕ ΤΗΝ ΚΑΜΕΡΑ</p>»;
     });
 
-    function animate() {
-        requestAnimationFrame(animate);
+    function renderLoop() {
+        requestAnimationFrame(renderLoop);
         renderer.render(scene, camera);
     }
-    animate();
+    renderLoop();
 
     window.addEventListener(«resize», () => {
         renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
