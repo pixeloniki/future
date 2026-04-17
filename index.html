@@ -2,130 +2,131 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Salonicas Future OS</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
+    <title>Salonicas Sensor Vision</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; background: radial-gradient(circle, #001219 0%, #000000 100%); overflow: hidden; color: #00d2ff; font-family: 'Courier New', monospace; }
-        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 1px solid rgba(0, 210, 255, 0.2); }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; color: #00d2ff; }
         
-        .header { position: absolute; top: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 50px; box-sizing: border-box; }
-        .status { text-shadow: 0 0 10px #00d2ff; letter-spacing: 3px; }
+        /* Η κύρια κάμερα στο υπόβαθρο */
+        #webcam { transform: scaleX(-1); position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.3; z-index: 0; filter: brightness(0.5) contrast(1.2) sepia(0.5) hue-rotate(140deg); }
         
-        .watermark { position: absolute; bottom: 40px; right: 50px; text-align: right; }
-        .watermark h1 { font-size: 2.5rem; margin: 0; color: #fff; text-shadow: 0 0 20px rgba(0,210,255,0.8); }
-        .greek-flag { width: 50px; height: auto; margin-bottom: 10px; border: 1px solid white; }
+        /* Το επίπεδο των αισθητήρων */
+        #sensor-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transform: scaleX(-1); }
+        
+        /* Το 3D περιβάλλον */
+        #canvas-3d { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 
-        #video-feed { position: absolute; bottom: 30px; left: 30px; width: 240px; height: 180px; border-radius: 15px; border: 2px solid #00d2ff; transform: scaleX(-1); object-fit: cover; }
-        
-        /* Interactive Icons */
-        .side-bar { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 30px; font-size: 1.5rem; }
-        .icon { opacity: 0.6; border: 1px solid #00d2ff; padding: 10px; border-radius: 50%; }
+        /* Φουτουριστικό UI */
+        #ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; border: 20px solid rgba(0, 210, 255, 0.1); box-sizing: border-box; }
+        .top-info { position: absolute; top: 40px; left: 60px; font-family: monospace; font-size: 1.2rem; text-shadow: 0 0 10px #00d2ff; }
+        .brand { position: absolute; bottom: 50px; right: 60px; text-align: right; }
+        .brand h1 { font-size: 2.5rem; margin: 0; letter-spacing: 4px; text-shadow: 0 0 20px #00d2ff; }
+        .flag { width: 50px; margin-top: 10px; opacity: 0.8; }
     </style>
 </head>
 <body>
 
-<video id="video-feed" autoplay playsinline></video>
+<video id="webcam" autoplay playsinline></video>
+<canvas id="sensor-canvas"></canvas>
+<div id="canvas-3d"></div>
 
-<div id="ui-overlay">
-    <div class="header">
-        <div class="status">ΣΥΣΤΗΜΑ : ONLINE</div>
-        <div class="status">ΤΟΠΟΘΕΣΙΑ : ΕΛΛΑΣ</div>
+<div id="ui">
+    <div class="top-info">
+        LIVE SENSOR FEED: ACTIVE<br>
+        PROCESSED BY SALONICAS AI v3.0<br>
+        ΕΛΛΗΝΙΚΟ ΣΥΣΤΗΜΑ ΕΛΕΓΧΟΥ
     </div>
-
-    <div class="side-bar">
-        <div class="icon">Ω</div>
-        <div class="icon">Δ</div>
-        <div class="icon">Ξ</div>
-    </div>
-
-    <div class="watermark">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Flag_of_Greece.svg" class="greek-flag">
-        <p>NEURAL INTERFACE PROTOCOL</p>
+    <div class="brand">
         <h1>CREATED BY SALONICAS</h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Flag_of_Greece.svg" class="flag">
     </div>
 </div>
 
 <script type="module">
-    import { GestureRecognizer, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
+    import { GestureRecognizer, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
 
+    const video = document.getElementById("webcam");
+    const canvasElement = document.getElementById("sensor-canvas");
+    const canvasCtx = canvasElement.getContext("2d");
     let gestureRecognizer;
-    let lastVideoTime = -1;
-    const video = document.getElementById("video-feed");
 
-    // Three.js Scene Setup
+    // --- THREE.JS SETUP (Η ΓΗ) ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    document.getElementById('canvas-3d').appendChild(renderer.domElement);
 
-    // Δημιουργία της Γης
-    const earthGeometry = new THREE.SphereGeometry(2, 64, 64);
-    const earthTexture = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
-    const earthMaterial = new THREE.MeshPhongMaterial({ 
-        map: earthTexture,
-        shininess: 5,
-        emissive: 0x112244
-    });
-    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    scene.add(earth);
-
-    // Φωτισμός για ρεαλισμό
     const light = new THREE.PointLight(0xffffff, 1.5);
-    light.position.set(5, 3, 5);
+    light.position.set(5, 5, 5);
     scene.add(light);
-    scene.add(new THREE.AmbientLight(0x333333));
+    scene.add(new THREE.AmbientLight(0x202020));
 
+    const earthGeom = new THREE.SphereGeometry(1.5, 64, 64);
+    const earthTex = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
+    const earthMat = new THREE.MeshPhongMaterial({ map: earthTex });
+    const earth = new THREE.Mesh(earthGeom, earthMat);
+    scene.add(earth);
     camera.position.z = 5;
 
-    // MediaPipe Initialization
-    async function initGesture() {
-        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
+    // --- AI & SENSORS ---
+    async function init() {
+        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
         gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
-            baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task" },
-            runningMode: "VIDEO",
-            numHands: 1
+            baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task", delegate: "GPU" },
+            runningMode: "VIDEO"
         });
         startCamera();
     }
 
     function startCamera() {
-        navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+        navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } }).then((stream) => {
             video.srcObject = stream;
-            video.addEventListener("loadeddata", predictWebcam);
+            video.addEventListener("loadeddata", predict);
         });
     }
 
-    async function predictWebcam() {
-        if (video.currentTime !== lastVideoTime) {
-            lastVideoTime = video.currentTime;
+    let lastTime = -1;
+    const drawingUtils = new DrawingUtils(canvasCtx);
+
+    async function predict() {
+        canvasElement.width = video.videoWidth;
+        canvasElement.height = video.videoHeight;
+
+        if (video.currentTime !== lastTime) {
+            lastTime = video.currentTime;
             const results = gestureRecognizer.recognizeForVideo(video, Date.now());
 
-            if (results.gestures.length > 0) {
-                const gesture = results.gestures[0][0].categoryName;
-                const hand = results.landmarks[0];
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-                // Περιστροφή με την κίνηση του χεριού
-                if (gesture === "Closed_Fist" || gesture === "Pointing_Up") {
-                    earth.rotation.y += 0.05;
-                    earthMaterial.emissive.setHex(0x00ff00); // Πράσινο glow όταν πιάνεις
-                } else {
-                    earthMaterial.emissive.setHex(0x112244);
+            if (results.landmarks) {
+                for (const landmarks of results.landmarks) {
+                    // Σχεδίαση των συνδέσμων (γραμμές)
+                    drawingUtils.drawConnectors(landmarks, GestureRecognizer.HAND_CONNECTIONS, {
+                        color: "#00d2ff",
+                        lineWidth: 4
+                    });
+                    // Σχεδίαση των αισθητήρων (τελεία σε κάθε άρθρωση)
+                    drawingUtils.drawLandmarks(landmarks, {
+                        color: "#ffffff",
+                        lineWidth: 2,
+                        radius: 5
+                    });
+
+                    // Αλληλεπίδραση με τη Γη
+                    const palm = landmarks[9];
+                    earth.position.x = (palm.x - 0.5) * -10;
+                    earth.position.y = (palm.y - 0.5) * -10;
+                    
+                    // Zoom In/Out βάσει ύψους
+                    camera.position.z = 4 + (palm.y * 3);
                 }
-
-                // Ζουμ με βάση το ύψος του χεριού (Y axis)
-                const zoomLevel = 5 + (hand[8].y - 0.5) * 4;
-                camera.position.z = THREE.MathUtils.lerp(camera.position.z, zoomLevel, 0.1);
             }
         }
-        requestAnimationFrame(predictWebcam);
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-        earth.rotation.y += 0.002; // Αυτόματη αργή περιστροφή
+        earth.rotation.y += 0.005;
         renderer.render(scene, camera);
+        requestAnimationFrame(predict);
     }
 
     window.addEventListener('resize', () => {
@@ -134,8 +135,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    initGesture();
-    animate();
+    init();
 </script>
 </body>
 </html>
