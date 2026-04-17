@@ -1,779 +1,281 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Salonicas Vision OS</title>
+<title>Salonicas Vision OS | Pro</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;600&display=swap');
 
   :root {
     --cyan: #00f2ff;
-    --cyan-dim: rgba(0,242,255,0.15);
-    --cyan-mid: rgba(0,242,255,0.4);
-    --cyan-glow: 0 0 10px #00f2ff, 0 0 20px #00f2ff, 0 0 40px rgba(0,242,255,0.4);
     --dark: #020408;
-    --panel: rgba(5, 15, 25, 0.85);
+    --glow: 0 0 15px rgba(0, 242, 255, 0.5);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    background: var(--dark);
-    font-family: 'Rajdhani', sans-serif;
-    color: var(--cyan);
-    touch-action: none;
+  body, html { 
+    width: 100%; height: 100%; overflow: hidden; 
+    background: #000; font-family: 'Rajdhani', sans-serif;
   }
 
-  /* LOADING SCREEN */
   #loading-screen {
-    position: fixed; inset: 0; z-index: 9999;
-    background: var(--dark);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 24px;
-    transition: opacity 0.8s ease;
-  }
-  #loading-screen.hidden { opacity: 0; pointer-events: none; }
-
-  .loader-ring {
-    width: 80px; height: 80px;
-    border: 2px solid transparent;
-    border-top-color: var(--cyan);
-    border-right-color: var(--cyan);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    box-shadow: var(--cyan-glow);
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loader-text {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-  .loader-sub {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: rgba(0,242,255,0.5);
-    text-transform: uppercase;
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--dark); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: var(--cyan);
+    transition: opacity 0.5s;
   }
 
-  /* MAIN LAYOUT */
-  #app {
-    width: 100%; height: 100%;
-    display: flex; flex-direction: column;
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  #top-section { 
+    height: 60%; position: relative; background: radial-gradient(circle, #001015 0%, #000 100%); 
   }
 
-  /* TOP — 3D SPACE */
-  #space-section {
-    position: relative;
-    width: 100%; height: 60%;
-    overflow: hidden;
-    background: #000005;
+  #bottom-section { 
+    height: 40%; position: relative; border-top: 1px solid rgba(0, 242, 255, 0.3);
+    background: #000; overflow: hidden;
   }
 
-  #three-canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
+  video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #webcam { transform: scaleX(-1); object-fit: cover; opacity: 0.6; }
+  #hand-canvas { transform: scaleX(-1); z-index: 5; }
+
+  /* UI Elements */
+  .hud {
+    position: absolute; z-index: 10; pointer-events: none;
+    font-family: 'Orbitron', sans-serif; font-size: 10px; color: var(--cyan);
+    text-shadow: var(--glow); text-transform: uppercase;
+  }
+  .tl { top: 20px; left: 20px; }
+  .tr { top: 20px; right: 20px; text-align: right; }
+  .bl { bottom: 20px; left: 20px; }
+  .br { bottom: 20px; right: 20px; display: flex; align-items: center; gap: 10px; }
+
+  .divider-label {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: #000; padding: 0 15px; font-size: 9px; letter-spacing: 3px;
   }
 
-  /* HUD overlays */
-  .hud-corner {
-    position: absolute;
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--cyan);
-    text-shadow: 0 0 8px var(--cyan);
-    pointer-events: none;
-  }
-  .hud-tl { top: 12px; left: 14px; }
-  .hud-tr { top: 12px; right: 14px; text-align: right; }
-  .hud-bl { bottom: 12px; left: 14px; }
-
-  .hud-line { opacity: 0.6; margin-bottom: 3px; }
-  .hud-bright { opacity: 1; }
-
-  /* Corner brackets */
-  .bracket {
-    position: absolute;
-    width: 20px; height: 20px;
-    pointer-events: none;
-  }
-  .bracket::before, .bracket::after {
-    content: '';
-    position: absolute;
-    background: var(--cyan);
-    box-shadow: 0 0 6px var(--cyan);
-  }
-  .bracket.tl { top: 8px; left: 8px; }
-  .bracket.tl::before { top:0;left:0;width:2px;height:12px; }
-  .bracket.tl::after  { top:0;left:0;width:12px;height:2px; }
-  .bracket.tr { top: 8px; right: 8px; }
-  .bracket.tr::before { top:0;right:0;width:2px;height:12px; }
-  .bracket.tr::after  { top:0;right:0;width:12px;height:2px; }
-  .bracket.bl { bottom: 8px; left: 8px; }
-  .bracket.bl::before { bottom:0;left:0;width:2px;height:12px; }
-  .bracket.bl::after  { bottom:0;left:0;width:12px;height:2px; }
-  .bracket.br { bottom: 8px; right: 8px; }
-  .bracket.br::before { bottom:0;right:0;width:2px;height:12px; }
-  .bracket.br::after  { bottom:0;right:0;width:12px;height:2px; }
-
-  /* Divider */
-  #divider {
-    width: 100%; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-    box-shadow: 0 0 12px var(--cyan), 0 0 24px rgba(0,242,255,0.3);
-    position: relative; z-index: 10;
-    flex-shrink: 0;
-  }
-
-  #divider::before {
-    content: 'SALONICAS VISION OS';
-    position: absolute;
-    left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 5px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-    background: var(--dark);
-    padding: 0 10px;
-    white-space: nowrap;
-  }
-
-  /* BOTTOM — WEBCAM */
-  #cam-section {
-    position: relative;
-    width: 100%;
-    flex: 1;
-    overflow: hidden;
-    background: #000;
-  }
-
-  #webcam {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transform: scaleX(-1); /* mirror */
-    opacity: 0.9;
-  }
-
-  #hand-canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    transform: scaleX(-1);
-    pointer-events: none;
-  }
-
-  /* Scanline effect */
-  #cam-section::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 5;
-  }
-
-  /* Vignette */
-  #cam-vignette {
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,30,0.7) 100%);
-    pointer-events: none; z-index: 4;
-  }
-
-  /* Cam HUD */
-  .cam-hud {
-    position: absolute;
-    font-family: 'Orbitron', monospace;
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--cyan);
-    text-shadow: 0 0 6px var(--cyan);
-    pointer-events: none;
-    z-index: 10;
-  }
-  .cam-hud-tl { top: 10px; left: 12px; }
-  .cam-hud-tr { top: 10px; right: 12px; text-align: right; }
-
-  /* Status dot */
-  .status-dot {
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--cyan);
-    box-shadow: 0 0 8px var(--cyan);
-    animation: blink 2s ease-in-out infinite;
-    vertical-align: middle;
-    margin-right: 5px;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-  /* BRANDING bottom-right */
-  #branding {
-    position: absolute;
-    bottom: 14px; right: 14px;
-    z-index: 20;
-    display: flex; align-items: center; gap: 8px;
-    pointer-events: none;
-  }
-
-  #branding-text {
-    text-align: right;
-    font-family: 'Orbitron', monospace;
-  }
-  #branding-name {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-    display: block;
-  }
-  #branding-sub {
-    font-size: 7px;
-    letter-spacing: 2px;
-    color: rgba(0,242,255,0.5);
-    display: block;
-  }
-
-  /* Greek flag mini */
-  #greek-flag {
-    width: 28px; height: 19px;
-    border-radius: 2px;
-    overflow: hidden;
-    box-shadow: 0 0 6px rgba(0,242,255,0.5);
-    flex-shrink: 0;
-  }
-
-  /* Gesture indicator */
-  #gesture-hud {
-    position: absolute;
-    bottom: 14px; left: 14px;
-    z-index: 20;
-    font-family: 'Orbitron', monospace;
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: var(--cyan);
-    text-shadow: 0 0 6px var(--cyan);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-  #gesture-hud.visible { opacity: 1; }
-
-  /* Cam border glow */
-  #cam-section::before {
-    content: '';
-    position: absolute; inset: 0;
-    border: 1px solid rgba(0,242,255,0.2);
-    pointer-events: none; z-index: 15;
-  }
-
-  /* Time display */
-  #clock {
-    font-family: 'Orbitron', monospace;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-  }
-
-  /* Crosshair in space */
-  #crosshair {
-    position: absolute;
-    width: 20px; height: 20px;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
-    transition: left 0.05s, top 0.05s;
-  }
-  #crosshair::before, #crosshair::after {
-    content: '';
-    position: absolute;
-    background: rgba(0,242,255,0.7);
-    box-shadow: 0 0 6px var(--cyan);
-  }
-  #crosshair::before { top:50%;left:0;width:100%;height:1px;transform:translateY(-50%); }
-  #crosshair::after  { top:0;left:50%;height:100%;width:1px;transform:translateX(-50%); }
-
-  /* Zoom readout */
-  #zoom-hud {
-    position: absolute;
-    bottom: 14px; left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--cyan);
-    text-shadow: 0 0 8px var(--cyan);
-    opacity: 0.7;
-    pointer-events: none;
-    z-index: 10;
-  }
+  #greek-flag { width: 25px; height: 16px; border: 1px solid rgba(255,255,255,0.2); }
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
 <div id="loading-screen">
-  <div class="loader-ring"></div>
-  <div class="loader-text">INITIALIZING VISION OS</div>
-  <div class="loader-sub">Requesting camera access…</div>
+  <div style="font-size: 24px; letter-spacing: 5px; margin-bottom: 10px;">SALONICAS</div>
+  <div id="status">INITIALIZING SENSORS...</div>
 </div>
 
-<!-- APP -->
 <div id="app">
-
-  <!-- SPACE SECTION -->
-  <div id="space-section">
+  <div id="top-section">
     <canvas id="three-canvas"></canvas>
-    <div id="crosshair"></div>
-
-    <div class="bracket tl"></div>
-    <div class="bracket tr"></div>
-    <div class="bracket bl"></div>
-    <div class="bracket br"></div>
-
-    <div class="hud-corner hud-tl">
-      <div class="hud-line">SYS // SPATIAL RENDER</div>
-      <div class="hud-bright" id="clock">--:--:--</div>
-    </div>
-    <div class="hud-corner hud-tr">
-      <div class="hud-line">EARTH-1 // LIVE</div>
-      <div class="hud-bright" id="coords">X:0.00 Y:0.00</div>
-    </div>
-    <div class="hud-corner hud-bl">
-      <div class="hud-line" id="zoom-label">ZOOM: 1.00×</div>
-    </div>
-    <div id="zoom-hud">◈ PINCH TO ZOOM</div>
+    <div class="hud tl">Spatial Map: Live<br><span id="fps">60</span> FPS</div>
+    <div class="hud tr" id="coords">X: 0.00<br>Y: 0.00</div>
+    <div class="hud bl" id="zoom-level">Zoom: 1.0x</div>
   </div>
 
-  <div id="divider"></div>
-
-  <!-- CAM SECTION -->
-  <div id="cam-section">
-    <video id="webcam" autoplay playsinline muted></video>
+  <div id="bottom-section">
+    <div class="divider-label">VISION OS SENSOR FEED</div>
+    <video id="webcam" autoplay playsinline></video>
     <canvas id="hand-canvas"></canvas>
-    <div id="cam-vignette"></div>
-
-    <div class="bracket tl"></div>
-    <div class="bracket tr"></div>
-    <div class="bracket bl"></div>
-    <div class="bracket br"></div>
-
-    <div class="cam-hud cam-hud-tl">
-      <span class="status-dot"></span>HAND TRACK // LIVE
-    </div>
-    <div class="cam-hud cam-hud-tr" id="hand-status">-- HANDS</div>
-
-    <div id="gesture-hud" id="gesture-indicator">● PINCH DETECTED</div>
-
-    <div id="branding">
-      <div id="branding-text">
-        <span id="branding-name">SALONICAS</span>
-        <span id="branding-sub">VISION OS · Θεσσαλονίκη</span>
+    
+    <div class="hud tl" style="font-size: 8px;"><span style="color:red">●</span> REC FEED</div>
+    <div class="hud tr" id="hand-count">NO HANDS DETECTED</div>
+    
+    <div class="hud br">
+      <div style="text-align: right">
+        <div style="font-weight: bold; letter-spacing: 2px;">SALONICAS</div>
+        <div style="font-size: 7px; opacity: 0.7;">THESSALONIKI, GR</div>
       </div>
-      <!-- Greek flag SVG -->
-      <svg id="greek-flag" viewBox="0 0 27 18" xmlns="http://www.w3.org/2000/svg">
+      <svg id="greek-flag" viewBox="0 0 27 18">
         <rect width="27" height="18" fill="#0D5EAF"/>
-        <rect y="0"  width="27" height="2" fill="#0D5EAF"/>
-        <rect y="2"  width="27" height="2" fill="white"/>
-        <rect y="4"  width="27" height="2" fill="#0D5EAF"/>
-        <rect y="6"  width="27" height="2" fill="white"/>
-        <rect y="8"  width="27" height="2" fill="#0D5EAF"/>
-        <rect y="10" width="27" height="2" fill="white"/>
-        <rect y="12" width="27" height="2" fill="#0D5EAF"/>
-        <rect y="14" width="27" height="2" fill="white"/>
-        <rect y="16" width="27" height="2" fill="#0D5EAF"/>
-        <!-- Cross canton -->
-        <rect x="0" y="0" width="11" height="10" fill="#0D5EAF"/>
-        <rect x="4" y="0" width="3" height="10" fill="white"/>
-        <rect x="0" y="3.5" width="11" height="3" fill="white"/>
+        <path d="M0 2h27M0 6h27M0 10h27M0 14h27M0 18h27" stroke="white" stroke-width="2"/>
+        <rect width="11" height="10" fill="#0D5EAF"/>
+        <path d="M5 0v10M0 5h11" stroke="white" stroke-width="2"/>
       </svg>
     </div>
   </div>
 </div>
 
-<!-- CDNs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
 <script>
-// ─────────────────────────────────────────────
-// CLOCK
-// ─────────────────────────────────────────────
-const clockEl = document.getElementById('clock');
-function updateClock() {
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2,'0');
-  const mm = String(now.getMinutes()).padStart(2,'0');
-  const ss = String(now.getSeconds()).padStart(2,'0');
-  clockEl.textContent = `${hh}:${mm}:${ss}`;
-}
-setInterval(updateClock, 1000);
-updateClock();
+// --- CONFIG & STATE ---
+const state = {
+  targetX: 0, targetY: 0,
+  currX: 0, currY: 0,
+  targetZoom: 4, currZoom: 4,
+  lastPinchDist: null,
+  lerpFactor: 0.1 // Όσο μικρότερο, τόσο πιο ομαλή η κίνηση
+};
 
-// ─────────────────────────────────────────────
-// THREE.JS — SPACE + EARTH
-// ─────────────────────────────────────────────
-const spaceSection = document.getElementById('space-section');
-const threeCanvas  = document.getElementById('three-canvas');
+// --- THREE.JS ENGINE ---
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById(«three-canvas»), antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
 
-const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(spaceSection.clientWidth, spaceSection.clientHeight);
+// Φωτισμός (Vision OS Style)
+const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+sun.position.set(5, 3, 5);
+scene.add(sun);
+scene.add(new THREE.AmbientLight(0x404040, 0.5));
 
-const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50, spaceSection.clientWidth / spaceSection.clientHeight, 0.1, 1000);
-camera.position.z = 3;
-
-// Stars
-const starGeo = new THREE.BufferGeometry();
-const starCount = 2500;
-const starPos = new Float32Array(starCount * 3);
-for (let i = 0; i < starCount * 3; i++) starPos[i] = (Math.random() - 0.5) * 200;
-starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, sizeAttenuation: true });
-scene.add(new THREE.Points(starGeo, starMat));
-
-// Procedural Earth
-const earthGeo = new THREE.SphereGeometry(1, 64, 64);
-
-// Canvas-based procedural Earth texture
-function makeEarthTexture(size = 512) {
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d');
-
-  // Ocean
-  const grad = ctx.createLinearGradient(0,0,0,size);
-  grad.addColorStop(0,   '#0a1a3a');
-  grad.addColorStop(0.5, '#0d2b5c');
-  grad.addColorStop(1,   '#081530');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
-
-  // Continents (simplified blobs)
-  ctx.fillStyle = '#1a4a2e';
-  const continents = [
-    {x:0.20, y:0.35, rx:0.12, ry:0.18}, // Americas
-    {x:0.52, y:0.35, rx:0.10, ry:0.16}, // Europe/Africa
-    {x:0.72, y:0.38, rx:0.13, ry:0.14}, // Asia
-    {x:0.80, y:0.60, rx:0.07, ry:0.07}, // Australia
-    {x:0.50, y:0.90, rx:0.14, ry:0.05}, // Antarctica
-  ];
-  for (const cn of continents) {
-    ctx.beginPath();
-    ctx.ellipse(cn.x*size, cn.y*size, cn.rx*size, cn.ry*size, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Noise bumps
-    for (let b = 0; b < 6; b++) {
-      ctx.beginPath();
-      ctx.ellipse(
-        (cn.x + (Math.random()-0.5)*cn.rx*1.4)*size,
-        (cn.y + (Math.random()-0.5)*cn.ry*1.4)*size,
-        cn.rx*size*(0.2+Math.random()*0.3),
-        cn.ry*size*(0.2+Math.random()*0.3),
-        Math.random()*Math.PI, 0, Math.PI*2
-      );
-      ctx.fill();
-    }
-  }
-
-  // Polar ice
-  ctx.fillStyle = 'rgba(180,220,255,0.7)';
-  ctx.beginPath(); ctx.ellipse(size*0.5, 0,      size*0.18, size*0.06, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(size*0.5, size,   size*0.20, size*0.05, 0, 0, Math.PI*2); ctx.fill();
-
-  // Atmosphere glow edge
-  ctx.strokeStyle = 'rgba(0,180,255,0.15)';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(0,0,size,size);
-
-  return new THREE.CanvasTexture(c);
-}
-
-const earthTex = makeEarthTexture(512);
-
+// Earth Creation
+const earthGeo = new THREE.SphereGeometry(1.5, 64, 64);
 const earthMat = new THREE.MeshPhongMaterial({
-  map: earthTex,
-  specular: new THREE.Color(0x004466),
-  shininess: 30,
-  emissive: new THREE.Color(0x001122),
-  emissiveIntensity: 0.15,
+  color: 0x2233ff,
+  wireframe: false,
+  emissive: 0x112244,
+  shininess: 25
 });
-const earthMesh = new THREE.Mesh(earthGeo, earthMat);
-scene.add(earthMesh);
+const earth = new THREE.Mesh(earthGeo, earthMat);
+scene.add(earth);
 
-// Atmosphere halo
-const atmoGeo = new THREE.SphereGeometry(1.045, 64, 64);
-const atmoMat = new THREE.MeshPhongMaterial({
-  color: 0x004488,
-  transparent: true,
-  opacity: 0.18,
-  side: THREE.FrontSide,
-  depthWrite: false,
+// Wireframe Overlay (Futuristic Look)
+const wireMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.1 });
+const wireframe = new THREE.Mesh(earthGeo, wireMat);
+earth.add(wireframe);
+
+// --- MEDIAPIPE SENSORS ---
+const video = document.getElementById(«webcam»);
+const handCanvas = document.getElementById(«hand-canvas»);
+const hCtx = handCanvas.getContext(«2d»);
+
+const hands = new Hands({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
 });
-scene.add(new THREE.Mesh(atmoGeo, atmoMat));
 
-// Grid / wireframe overlay
-const wireGeo = new THREE.SphereGeometry(1.01, 18, 18);
-const wireMat = new THREE.MeshBasicMaterial({
-  color: 0x00f2ff,
-  wireframe: true,
-  transparent: true,
-  opacity: 0.04,
+hands.setOptions({
+  maxNumHands: 2,
+  modelComplexity: 1, // 1 για ταχύτητα, 0 για ακόμα πιο γρήγορα
+  minDetectionConfidence: 0.6,
+  minTrackingConfidence: 0.6
 });
-scene.add(new THREE.Mesh(wireGeo, wireMat));
 
-// Lights
-const ambLight = new THREE.AmbientLight(0x112244, 0.6);
-scene.add(ambLight);
-const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-sunLight.position.set(5, 3, 5);
-scene.add(sunLight);
-const rimLight = new THREE.DirectionalLight(0x0044ff, 0.3);
-rimLight.position.set(-5, -2, -5);
-scene.add(rimLight);
+hands.onResults((results) => {
+  document.getElementById(«loading-screen»).style.opacity = 0;
+  setTimeout(() => document.getElementById(«loading-screen»).style.display = «none», 500);
 
-// Earth control state
-let earthTargetX = 0;
-let earthTargetY = 0;
-let earthCurrentX = 0;
-let earthCurrentY = 0;
-let zoomTarget = 3;
-let zoomCurrent = 3;
-const coordsEl = document.getElementById('coords');
-const zoomLabelEl = document.getElementById('zoom-label');
-const crosshair = document.getElementById('crosshair');
-
-function resizeThree() {
-  const w = spaceSection.clientWidth;
-  const h = spaceSection.clientHeight;
-  renderer.setSize(w, h);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-}
-window.addEventListener('resize', resizeThree);
-
-function animateThree() {
-  requestAnimationFrame(animateThree);
-
-  // Smooth lerp
-  earthCurrentX += (earthTargetX - earthCurrentX) * 0.08;
-  earthCurrentY += (earthTargetY - earthCurrentY) * 0.08;
-  zoomCurrent    += (zoomTarget   - zoomCurrent)   * 0.06;
-
-  earthMesh.position.x = earthCurrentX;
-  earthMesh.position.y = earthCurrentY;
-  atmoGeo && scene.children.forEach(c => {
-    if (c.geometry && c.geometry.type === 'SphereGeometry' && c !== earthMesh) {
-      c.position.x = earthCurrentX;
-      c.position.y = earthCurrentY;
-    }
-  });
-
-  camera.position.z = zoomCurrent;
-  earthMesh.rotation.y += 0.0018;
-
-  coordsEl.textContent = `X:${earthCurrentX.toFixed(2)} Y:${earthCurrentY.toFixed(2)}`;
-  zoomLabelEl.textContent = `ZOOM: ${(3 / zoomCurrent).toFixed(2)}×`;
-
-  // Crosshair in screen space
-  const v = new THREE.Vector3(earthCurrentX, earthCurrentY, 0);
-  v.project(camera);
-  const halfW = spaceSection.clientWidth / 2;
-  const halfH = spaceSection.clientHeight / 2;
-  crosshair.style.left = (v.x * halfW + halfW) + 'px';
-  crosshair.style.top  = (-v.y * halfH + halfH) + 'px';
-
-  renderer.render(scene, camera);
-}
-animateThree();
-
-// ─────────────────────────────────────────────
-// WEBCAM + MEDIAPIPE HANDS
-// ─────────────────────────────────────────────
-const videoEl  = document.getElementById('webcam');
-const handCanvas = document.getElementById('hand-canvas');
-const hCtx = handCanvas.getContext('2d');
-const loadingScreen = document.getElementById('loading-screen');
-const handStatusEl  = document.getElementById('hand-status');
-const gestureEl     = document.getElementById('gesture-hud');
-
-let lastHandResults = null;
-let prevPinchDist = null;
-let gestureTimeout = null;
-
-function showGesture(text) {
-  gestureEl.textContent = text;
-  gestureEl.classList.add('visible');
-  clearTimeout(gestureTimeout);
-  gestureTimeout = setTimeout(() => gestureEl.classList.remove('visible'), 1500);
-}
-
-// Resize hand canvas
-function resizeHandCanvas() {
-  const cs = document.getElementById('cam-section');
-  handCanvas.width  = cs.clientWidth;
-  handCanvas.height = cs.clientHeight;
-  videoEl.style.width  = cs.clientWidth + 'px';
-  videoEl.style.height = cs.clientHeight + 'px';
-}
-window.addEventListener('resize', resizeHandCanvas);
-resizeHandCanvas();
-
-function onHandResults(results) {
   hCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
-  lastHandResults = results;
+  const count = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
+  document.getElementById(«hand-count»).innerText = count > 0 ? `${count} HANDS ACTIVE` : «NO HANDS DETECTED»;
 
-  const hands = results.multiHandLandmarks || [];
-  handStatusEl.textContent = hands.length > 0 ? `${hands.length} HAND${hands.length>1?'S':''}` : '-- HANDS';
+  if (results.multiHandLandmarks) {
+    results.multiHandLandmarks.forEach((lm, index) => {
+      // Σχεδίαση σκελετού
+      drawHandUI(lm);
 
+      // Έλεγχος κίνησης (Πρώτο χέρι)
+      if (index === 0) {
+        const wrist = lm[0];
+        state.targetX = (wrist.x - 0.5) * 4;
+        state.targetY = -(wrist.y - 0.5) * 3;
+      }
+
+      // Pinch to Zoom (Δύο χέρια)
+      if (results.multiHandLandmarks.length === 2) {
+        const h1 = results.multiHandLandmarks[0][8]; // Index tip
+        const h2 = results.multiHandLandmarks[1][8];
+        const dist = Math.hypot(h1.x - h2.x, h1.y - h2.y);
+        
+        if (state.lastPinchDist) {
+          const delta = dist - state.lastPinchDist;
+          state.targetZoom -= delta * 15;
+          state.targetZoom = Math.max(2, Math.min(7, state.targetZoom));
+        }
+        state.lastPinchDist = dist;
+      } else {
+        state.lastPinchDist = null;
+      }
+    });
+  }
+});
+
+function drawHandUI(landmarks) {
   const W = handCanvas.width;
   const H = handCanvas.height;
+  
+  hCtx.strokeStyle = «#00f2ff»;
+  hCtx.lineWidth = 2;
+  hCtx.shadowBlur = 10;
+  hCtx.shadowColor = «#00f2ff»;
 
-  // === Draw skeleton ===
-  const CONNECTIONS = window.HAND_CONNECTIONS || [
-    [0,1],[1,2],[2,3],[3,4],
-    [0,5],[5,6],[6,7],[7,8],
-    [5,9],[9,10],[10,11],[11,12],
-    [9,13],[13,14],[14,15],[15,16],
-    [13,17],[17,18],[18,19],[19,20],
-    [0,17],[0,5]
-  ];
+  // Σχεδίαση συνδέσεων
+  const pairs = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,9],[9,13],[13,17],[0,17],[5,6],[6,7],[7,8]];
+  pairs.forEach(([a, b]) => {
+    hCtx.beginPath();
+    hCtx.moveTo(landmarks[a].x * W, landmarks[a].y * H);
+    hCtx.lineTo(landmarks[b].x * W, landmarks[b].y * H);
+    hCtx.stroke();
+  });
 
-  for (const lm of hands) {
-    // Lines
-    for (const [a,b] of CONNECTIONS) {
-      const pa = lm[a], pb = lm[b];
-      hCtx.beginPath();
-      hCtx.moveTo(pa.x * W, pa.y * H);
-      hCtx.lineTo(pb.x * W, pb.y * H);
-      hCtx.strokeStyle = '#00f2ff';
-      hCtx.lineWidth = 1.5;
-      hCtx.shadowColor = '#00f2ff';
-      hCtx.shadowBlur = 8;
-      hCtx.stroke();
-    }
-    // Dots
-    for (const p of lm) {
-      hCtx.beginPath();
-      hCtx.arc(p.x * W, p.y * H, 3, 0, Math.PI * 2);
-      hCtx.fillStyle = 'white';
-      hCtx.shadowColor = '#00f2ff';
-      hCtx.shadowBlur = 10;
-      hCtx.fill();
-    }
-    // Fingertip accent dots (bigger)
-    for (const tip of [4, 8, 12, 16, 20]) {
-      const p = lm[tip];
-      hCtx.beginPath();
-      hCtx.arc(p.x * W, p.y * H, 5, 0, Math.PI * 2);
-      hCtx.fillStyle = 'rgba(0,242,255,0.7)';
-      hCtx.shadowBlur = 16;
-      hCtx.fill();
-    }
-  }
-  hCtx.shadowBlur = 0;
-
-  // === HAND CONTROL ===
-  if (hands.length === 1) {
-    const lm = hands[0];
-    const palm = lm[9];
-    // Map 0–1 → -1.2 to 1.2
-    earthTargetX = (palm.x - 0.5) * -2.4;
-    earthTargetY = (palm.y - 0.5) * -2.0;
-    prevPinchDist = null;
-  } else if (hands.length === 2) {
-    // Average palm for position
-    const p0 = hands[0][9], p1 = hands[1][9];
-    const mx = (p0.x + p1.x) / 2;
-    const my = (p0.y + p1.y) / 2;
-    earthTargetX = (mx - 0.5) * -2.4;
-    earthTargetY = (my - 0.5) * -2.0;
-
-    // Pinch distance between index fingertips (8)
-    const dx = hands[0][8].x - hands[1][8].x;
-    const dy = hands[0][8].y - hands[1][8].y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if (prevPinchDist !== null) {
-      const delta = (prevPinchDist - dist) * 4;
-      zoomTarget = Math.max(1.5, Math.min(6, zoomTarget + delta));
-      if (Math.abs(delta) > 0.01) showGesture('◈ PINCH ZOOM');
-    }
-    prevPinchDist = dist;
-  } else {
-    prevPinchDist = null;
-  }
+  // Σχεδίαση σημείων
+  hCtx.fillStyle = «#fff»;
+  landmarks.forEach(pt => {
+    hCtx.beginPath();
+    hCtx.arc(pt.x * W, pt.y * H, 3, 0, Math.PI * 2);
+    hCtx.fill();
+  });
 }
 
-// Initialize MediaPipe Hands
-async function initHands() {
-  const hands = new Hands({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+// --- OPTIMIZED LOOP ---
+async function setupCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({ 
+    video: { width: 1280, height: 720, frameRate: { ideal: 60 } } 
   });
-  hands.setOptions({
-    maxNumHands: 2,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.6,
+  video.srcObject = stream;
+  
+  return new Promise((resolve) => {
+    video.onloadedmetadata = () => {
+      handCanvas.width = video.videoWidth;
+      handCanvas.height = video.videoHeight;
+      resolve(video);
+    };
   });
-  hands.onResults(onHandResults);
-
-  // Start camera
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-    });
-    videoEl.srcObject = stream;
-    await videoEl.play();
-
-    // Hide loader
-    loadingScreen.classList.add('hidden');
-    setTimeout(() => loadingScreen.style.display = 'none', 900);
-
-    // Process frames
-    const mpCam = new Camera(videoEl, {
-      onFrame: async () => {
-        await hands.send({ image: videoEl });
-      },
-      width: 640,
-      height: 480,
-    });
-    mpCam.start();
-  } catch (err) {
-    console.error('Camera error:', err);
-    document.querySelector('#loading-screen .loader-text').textContent = 'CAMERA ACCESS DENIED';
-    document.querySelector('#loading-screen .loader-sub').textContent = err.message;
-    document.querySelector('.loader-ring').style.borderColor = '#ff3355';
-  }
 }
 
-// Start on load
-window.addEventListener('load', () => {
-  // Small delay so browser is ready
-  setTimeout(initHands, 400);
+function animate() {
+  // Ομαλή κίνηση (Lerp)
+  state.currX += (state.targetX - state.currX) * state.lerpFactor;
+  state.currY += (state.targetY - state.currY) * state.lerpFactor;
+  state.currZoom += (state.targetZoom - state.currZoom) * state.lerpFactor;
+
+  earth.position.x = state.currX;
+  earth.position.y = state.currY;
+  camera.position.z = state.currZoom;
+  earth.rotation.y += 0.005;
+
+  // UI Updates
+  document.getElementById(«coords»).innerHTML = `X: ${state.currX.toFixed(2)}<br>Y: ${state.currY.toFixed(2)}`;
+  document.getElementById(«zoom-level»).innerText = `Zoom: ${(5/state.currZoom).toFixed(1)}x`;
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+// Έναρξη κατόπιν αλληλεπίδρασης για να μην "κολλάει" ο browser
+window.addEventListener(«click», async () => {
+  if (video.srcObject) return;
+  document.getElementById(«status»).innerText = «BOOTING SENSORS...»;
+  await setupCamera();
+  
+  // Χρήση requestAnimationFrame για το MediaPipe για μέγιστη ταχύτητα
+  async function detectionLoop() {
+    await hands.send({ image: video });
+    requestAnimationFrame(detectionLoop);
+  }
+  
+  detectionLoop();
+  animate();
 });
+
+// Auto-start message
+setTimeout(() => {
+  if (!video.srcObject) document.getElementById(«status»).innerText = «TAP ANYWHERE TO START»;
+}, 2000);
 </script>
 </body>
 </html>
