@@ -3,279 +3,188 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Salonicas Vision OS | Pro</title>
+<title>Salonicas Vision OS | Stable</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;600&display=swap');
 
   :root {
     --cyan: #00f2ff;
     --dark: #020408;
-    --glow: 0 0 15px rgba(0, 242, 255, 0.5);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body, html { 
     width: 100%; height: 100%; overflow: hidden; 
     background: #000; font-family: 'Rajdhani', sans-serif;
+    color: var(--cyan);
   }
 
   #loading-screen {
     position: fixed; inset: 0; z-index: 999;
     background: var(--dark); display: flex; flex-direction: column;
-    align-items: center; justify-content: center; color: var(--cyan);
+    align-items: center; justify-content: center;
     transition: opacity 0.5s;
   }
 
-  #app { display: flex; flex-direction: column; height: 100vh; }
+  #app { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
 
-  #top-section { 
-    height: 60%; position: relative; background: radial-gradient(circle, #001015 0%, #000 100%); 
-  }
-
+  #top-section { height: 60%; width: 100%; position: relative; background: #000; }
   #bottom-section { 
-    height: 40%; position: relative; border-top: 1px solid rgba(0, 242, 255, 0.3);
-    background: #000; overflow: hidden;
+    height: 40%; width: 100%; position: relative; 
+    border-top: 2px solid var(--cyan); background: #000;
   }
 
   video, canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  #webcam { transform: scaleX(-1); object-fit: cover; opacity: 0.6; }
+  #webcam { transform: scaleX(-1); object-fit: cover; opacity: 0.5; }
   #hand-canvas { transform: scaleX(-1); z-index: 5; }
 
-  /* UI Elements */
   .hud {
     position: absolute; z-index: 10; pointer-events: none;
-    font-family: 'Orbitron', sans-serif; font-size: 10px; color: var(--cyan);
-    text-shadow: var(--glow); text-transform: uppercase;
+    font-family: 'Orbitron', sans-serif; font-size: 10px;
+    text-shadow: 0 0 10px var(--cyan);
   }
-  .tl { top: 20px; left: 20px; }
-  .tr { top: 20px; right: 20px; text-align: right; }
-  .bl { bottom: 20px; left: 20px; }
-  .br { bottom: 20px; right: 20px; display: flex; align-items: center; gap: 10px; }
+  .tl { top: 15px; left: 15px; }
+  .tr { top: 15px; right: 15px; text-align: right; }
+  .br { bottom: 15px; right: 15px; display: flex; align-items: center; gap: 8px; }
 
-  .divider-label {
-    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-    background: #000; padding: 0 15px; font-size: 9px; letter-spacing: 3px;
+  #start-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.8); display: flex;
+    align-items: center; justify-content: center;
   }
-
-  #greek-flag { width: 25px; height: 16px; border: 1px solid rgba(255,255,255,0.2); }
+  
+  button {
+    padding: 15px 40px; background: transparent; border: 2px solid var(--cyan);
+    color: var(--cyan); font-family: 'Orbitron'; cursor: pointer;
+    box-shadow: 0 0 15px var(--cyan);
+  }
 </style>
 </head>
 <body>
 
-<div id="loading-screen">
-  <div style="font-size: 24px; letter-spacing: 5px; margin-bottom: 10px;">SALONICAS</div>
-  <div id="status">INITIALIZING SENSORS...</div>
+<div id="start-overlay">
+  <button onclick="initSystem()">INITIALIZE SYSTEM</button>
+</div>
+
+<div id="loading-screen" style="display:none">
+  <div style="letter-spacing: 5px; font-size: 20px;">LOADING VISION OS...</div>
 </div>
 
 <div id="app">
   <div id="top-section">
     <canvas id="three-canvas"></canvas>
-    <div class="hud tl">Spatial Map: Live<br><span id="fps">60</span> FPS</div>
-    <div class="hud tr" id="coords">X: 0.00<br>Y: 0.00</div>
-    <div class="hud bl" id="zoom-level">Zoom: 1.0x</div>
+    <div class="hud tl">EARTH_CORE // SPATIAL</div>
+    <div class="hud tr" id="coords">X: 0.00 Y: 0.00</div>
   </div>
 
   <div id="bottom-section">
-    <div class="divider-label">VISION OS SENSOR FEED</div>
-    <video id="webcam" autoplay playsinline></video>
+    <video id="webcam" playsinline></video>
     <canvas id="hand-canvas"></canvas>
-    
-    <div class="hud tl" style="font-size: 8px;"><span style="color:red">●</span> REC FEED</div>
-    <div class="hud tr" id="hand-count">NO HANDS DETECTED</div>
-    
+    <div class="hud tl">SENSOR_FEED // ACTIVE</div>
     <div class="hud br">
       <div style="text-align: right">
-        <div style="font-weight: bold; letter-spacing: 2px;">SALONICAS</div>
-        <div style="font-size: 7px; opacity: 0.7;">THESSALONIKI, GR</div>
+        <div style="font-weight: bold;">SALONICAS</div>
+        <div style="font-size: 8px;">VISION OS</div>
       </div>
-      <svg id="greek-flag" viewBox="0 0 27 18">
-        <rect width="27" height="18" fill="#0D5EAF"/>
-        <path d="M0 2h27M0 6h27M0 10h27M0 14h27M0 18h27" stroke="white" stroke-width="2"/>
-        <rect width="11" height="10" fill="#0D5EAF"/>
-        <path d="M5 0v10M0 5h11" stroke="white" stroke-width="2"/>
-      </svg>
+      <div style="width:25px; height:15px; border:1px solid white; background: linear-gradient(to bottom, #005bae 20%, #fff 20%, #fff 40%, #005bae 40%, #005bae 60%, #fff 60%, #fff 80%, #005bae 80%);"></div>
     </div>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 
 <script>
-// --- CONFIG & STATE ---
-const state = {
-  targetX: 0, targetY: 0,
-  currX: 0, currY: 0,
-  targetZoom: 4, currZoom: 4,
-  lastPinchDist: null,
-  lerpFactor: 0.1 // Όσο μικρότερο, τόσο πιο ομαλή η κίνηση
-};
+let scene, camera, renderer, earth;
+let state = { targetX: 0, targetY: 0, currX: 0, currY: 0, zoom: 4 };
 
-// --- THREE.JS ENGINE ---
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById(«three-canvas»), antialias: true, alpha: true });
-renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
+function initThree() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / (window.innerHeight * 0.6), 0.1, 1000);
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById(«three-canvas»), antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
 
-// Φωτισμός (Vision OS Style)
-const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-sun.position.set(5, 3, 5);
-scene.add(sun);
-scene.add(new THREE.AmbientLight(0x404040, 0.5));
+  const light = new THREE.DirectionalLight(0xffffff, 1.5);
+  light.position.set(5, 3, 5);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0x404040));
 
-// Earth Creation
-const earthGeo = new THREE.SphereGeometry(1.5, 64, 64);
-const earthMat = new THREE.MeshPhongMaterial({
-  color: 0x2233ff,
-  wireframe: false,
-  emissive: 0x112244,
-  shininess: 25
-});
-const earth = new THREE.Mesh(earthGeo, earthMat);
-scene.add(earth);
-
-// Wireframe Overlay (Futuristic Look)
-const wireMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.1 });
-const wireframe = new THREE.Mesh(earthGeo, wireMat);
-earth.add(wireframe);
-
-// --- MEDIAPIPE SENSORS ---
-const video = document.getElementById(«webcam»);
-const handCanvas = document.getElementById(«hand-canvas»);
-const hCtx = handCanvas.getContext(«2d»);
-
-const hands = new Hands({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-});
-
-hands.setOptions({
-  maxNumHands: 2,
-  modelComplexity: 1, // 1 για ταχύτητα, 0 για ακόμα πιο γρήγορα
-  minDetectionConfidence: 0.6,
-  minTrackingConfidence: 0.6
-});
-
-hands.onResults((results) => {
-  document.getElementById(«loading-screen»).style.opacity = 0;
-  setTimeout(() => document.getElementById(«loading-screen»).style.display = «none», 500);
-
-  hCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
-  const count = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
-  document.getElementById(«hand-count»).innerText = count > 0 ? `${count} HANDS ACTIVE` : «NO HANDS DETECTED»;
-
-  if (results.multiHandLandmarks) {
-    results.multiHandLandmarks.forEach((lm, index) => {
-      // Σχεδίαση σκελετού
-      drawHandUI(lm);
-
-      // Έλεγχος κίνησης (Πρώτο χέρι)
-      if (index === 0) {
-        const wrist = lm[0];
-        state.targetX = (wrist.x - 0.5) * 4;
-        state.targetY = -(wrist.y - 0.5) * 3;
-      }
-
-      // Pinch to Zoom (Δύο χέρια)
-      if (results.multiHandLandmarks.length === 2) {
-        const h1 = results.multiHandLandmarks[0][8]; // Index tip
-        const h2 = results.multiHandLandmarks[1][8];
-        const dist = Math.hypot(h1.x - h2.x, h1.y - h2.y);
-        
-        if (state.lastPinchDist) {
-          const delta = dist - state.lastPinchDist;
-          state.targetZoom -= delta * 15;
-          state.targetZoom = Math.max(2, Math.min(7, state.targetZoom));
-        }
-        state.lastPinchDist = dist;
-      } else {
-        state.lastPinchDist = null;
-      }
-    });
-  }
-});
-
-function drawHandUI(landmarks) {
-  const W = handCanvas.width;
-  const H = handCanvas.height;
-  
-  hCtx.strokeStyle = «#00f2ff»;
-  hCtx.lineWidth = 2;
-  hCtx.shadowBlur = 10;
-  hCtx.shadowColor = «#00f2ff»;
-
-  // Σχεδίαση συνδέσεων
-  const pairs = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,9],[9,13],[13,17],[0,17],[5,6],[6,7],[7,8]];
-  pairs.forEach(([a, b]) => {
-    hCtx.beginPath();
-    hCtx.moveTo(landmarks[a].x * W, landmarks[a].y * H);
-    hCtx.lineTo(landmarks[b].x * W, landmarks[b].y * H);
-    hCtx.stroke();
+  const geo = new THREE.SphereGeometry(1.5, 64, 64);
+  const mat = new THREE.MeshPhongMaterial({
+    color: 0x00f2ff,
+    emissive: 0x002233,
+    wireframe: true, // Πιο high-tech aesthetic
   });
-
-  // Σχεδίαση σημείων
-  hCtx.fillStyle = «#fff»;
-  landmarks.forEach(pt => {
-    hCtx.beginPath();
-    hCtx.arc(pt.x * W, pt.y * H, 3, 0, Math.PI * 2);
-    hCtx.fill();
-  });
+  earth = new THREE.Mesh(geo, mat);
+  scene.add(earth);
+  camera.position.z = 4;
 }
 
-// --- OPTIMIZED LOOP ---
-async function setupCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({ 
-    video: { width: 1280, height: 720, frameRate: { ideal: 60 } } 
-  });
-  video.srcObject = stream;
+function onResults(results) {
+  const canvas = document.getElementById(«hand-canvas»);
+  const ctx = canvas.getContext(«2d»);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    for (const landmarks of results.multiHandLandmarks) {
+      // Σχεδίαση με το επίσημο tool της MediaPipe για ταχύτητα
+      drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: «#00f2ff», lineWidth: 2});
+      drawLandmarks(ctx, landmarks, {color: «#ffffff», lineWidth: 1, radius: 2});
+
+      // Κίνηση (Lerp target)
+      state.targetX = (landmarks[0].x - 0.5) * 5;
+      state.targetY = -(landmarks[0].y - 0.5) * 3;
+    }
+  }
+}
+
+async function initSystem() {
+  document.getElementById(«start-overlay»).style.display = «none»;
+  document.getElementById(«loading-screen»).style.display = «flex»;
   
-  return new Promise((resolve) => {
-    video.onloadedmetadata = () => {
-      handCanvas.width = video.videoWidth;
-      handCanvas.height = video.videoHeight;
-      resolve(video);
-    };
+  initThree();
+
+  const video = document.getElementById(«webcam»);
+  const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+  hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
+  hands.onResults(onResults);
+
+  const cam = new Camera(video, {
+    onFrame: async () => {
+      await hands.send({image: video});
+    },
+    width: 1280,
+    height: 720
+  });
+
+  cam.start().then(() => {
+    document.getElementById(«loading-screen»).style.display = «none»;
+    animate();
   });
 }
 
 function animate() {
-  // Ομαλή κίνηση (Lerp)
-  state.currX += (state.targetX - state.currX) * state.lerpFactor;
-  state.currY += (state.targetY - state.currY) * state.lerpFactor;
-  state.currZoom += (state.targetZoom - state.currZoom) * state.lerpFactor;
-
+  requestAnimationFrame(animate);
+  
+  // Smoothing Logic (Lerp)
+  state.currX += (state.targetX - state.currX) * 0.1;
+  state.currY += (state.targetY - state.currY) * 0.1;
+  
   earth.position.x = state.currX;
   earth.position.y = state.currY;
-  camera.position.z = state.currZoom;
-  earth.rotation.y += 0.005;
+  earth.rotation.y += 0.01;
 
-  // UI Updates
-  document.getElementById(«coords»).innerHTML = `X: ${state.currX.toFixed(2)}<br>Y: ${state.currY.toFixed(2)}`;
-  document.getElementById(«zoom-level»).innerText = `Zoom: ${(5/state.currZoom).toFixed(1)}x`;
-
+  document.getElementById(«coords»).innerText = `X: ${state.currX.toFixed(2)} Y: ${state.currY.toFixed(2)}`;
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
 }
 
-// Έναρξη κατόπιν αλληλεπίδρασης για να μην "κολλάει" ο browser
-window.addEventListener(«click», async () => {
-  if (video.srcObject) return;
-  document.getElementById(«status»).innerText = «BOOTING SENSORS...»;
-  await setupCamera();
-  
-  // Χρήση requestAnimationFrame για το MediaPipe για μέγιστη ταχύτητα
-  async function detectionLoop() {
-    await hands.send({ image: video });
-    requestAnimationFrame(detectionLoop);
-  }
-  
-  detectionLoop();
-  animate();
+window.addEventListener(«resize», () => {
+  camera.aspect = window.innerWidth / (window.innerHeight * 0.6);
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
 });
-
-// Auto-start message
-setTimeout(() => {
-  if (!video.srcObject) document.getElementById(«status»).innerText = «TAP ANYWHERE TO START»;
-}, 2000);
 </script>
 </body>
 </html>
