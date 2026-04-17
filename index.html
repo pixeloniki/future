@@ -2,83 +2,51 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Salonicas Ultimate Vision</title>
+    <title>Salonicas Gesture OS</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; padding: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; color: #00e5ff; }
         
-        /* Η κάμερα σε πλήρη οθόνη ως φόντο */
-        #input_video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            transform: scaleX(-1);
-            z-index: 0;
-            filter: brightness(0.6) contrast(1.1);
-        }
+        #input_video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; transform: scaleX(-1); z-index: 0; filter: brightness(0.4); }
+        #threejs_canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
 
-        /* Το επίπεδο όπου σχεδιάζονται οι αισθητήρες */
-        #output_canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 1;
-            transform: scaleX(-1);
-        }
-
-        /* Το επίπεδο για τη Γη */
-        #threejs_canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        /* Φουτουριστικό UI */
-        #interface {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none;
-            color: #00e5ff;
-            border: 10px solid rgba(0, 229, 255, 0.1);
-            box-sizing: border-box;
-        }
-
-        .header { position: absolute; top: 30px; left: 50px; text-shadow: 0 0 10px #00e5ff; }
-        .footer { position: absolute; bottom: 40px; right: 50px; text-align: right; }
-        .footer h1 { font-size: 2.5rem; margin: 0; text-transform: uppercase; color: #fff; text-shadow: 0 0 20px #00e5ff; }
-        .flag { width: 45px; margin-top: 10px; border: 1px solid white; }
+        /* UI Overlay */
+        #interface { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; border: 15px solid rgba(0, 229, 255, 0.05); box-sizing: border-box; }
+        .header { position: absolute; top: 40px; left: 60px; text-shadow: 0 0 10px #00e5ff; font-weight: bold; }
+        .gesture-status { position: absolute; top: 40px; right: 60px; text-align: right; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid #00e5ff; }
+        .footer { position: absolute; bottom: 50px; right: 60px; text-align: right; }
+        .footer h1 { font-size: 2.8rem; margin: 0; text-transform: uppercase; color: #fff; text-shadow: 0 0 25px #00e5ff; }
+        .flag { width: 50px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.8); }
+        
+        .hint { position: absolute; bottom: 50px; left: 60px; background: rgba(0,229,255,0.1); padding: 15px; border-radius: 10px; border: 1px solid rgba(0,229,255,0.3); }
     </style>
 </head>
 <body>
 
 <video id="input_video"></video>
-<canvas id="output_canvas"></canvas>
 <div id="threejs_canvas"></div>
 
 <div id="interface">
     <div class="header">
-        ΣΥΣΤΗΜΑ : ΕΝΕΡΓΟ<br>
-        ΑΙΣΘΗΤΗΡΕΣ : LIVE FEED<br>
-        v3.0 - ΕΛΛΑΣ
+        SALONICAS GESTURE INTERFACE v4.0<br>
+        STATUS: ACTIVE<br>
+        LOCATION: HELLAS
     </div>
+    
+    <div id="status" class="gesture-status">
+        READY
+    </div>
+
+    <div class="hint">
+        <strong>ΟΔΗΓΙΕΣ:</strong><br>
+        1. ΕΝΩΣΕ ΑΝΤΙΧΕΙΡΑ + ΔΕΙΚΤΗ (PINCH) & ΚΟΥΝΗΣΕ ΤΟ ΧΕΡΙ ΓΙΑ ΠΕΡΙΣΤΡΟΦΗ.<br>
+        2. PINCH ΚΑΙ ΜΕ ΤΑ ΔΥΟ ΧΕΡΙΑ ΓΙΑ ZOOM.
+    </div>
+
     <div class="footer">
-        <p>HOLOGRAPHIC INTERFACE ENGINE</p>
+        <p>ADVANCED NEURAL PROTOCOL</p>
         <h1>CREATED BY SALONICAS</h1>
         <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Flag_of_Greece.svg" class="flag">
     </div>
@@ -86,8 +54,7 @@
 
 <script>
     const videoElement = document.getElementById('input_video');
-    const canvasElement = document.getElementById('output_canvas');
-    const canvasCtx = canvasElement.getContext('2d');
+    const statusElement = document.getElementById('status');
 
     // --- THREE.JS SETUP ---
     const scene = new THREE.Scene();
@@ -96,56 +63,109 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById('threejs_canvas').appendChild(renderer.domElement);
 
-    const light = new THREE.PointLight(0xffffff, 1.5);
-    light.position.set(5, 5, 5);
+    // Φωτισμός
+    scene.add(new THREE.AmbientLight(0xaaaaaa));
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 3, 5);
     scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040));
 
-    const earthGeom = new THREE.SphereGeometry(1.8, 64, 64);
+    // Η Γη - ΜΕΝΕΙ ΣΤΑΘΕΡΗ ΣΤΟ ΚΕΝΤΡΟ
+    const earthGeom = new THREE.SphereGeometry(2, 64, 64);
     const earthTex = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
-    const earthMat = new THREE.MeshPhongMaterial({ map: earthTex });
+    const earthMat = new THREE.MeshPhongMaterial({ map: earthTex, shininess: 5 });
     const earth = new THREE.Mesh(earthGeom, earthMat);
     scene.add(earth);
-    camera.position.z = 5;
+    
+    camera.position.z = 6;
 
-    // --- MEDIAPIPE HANDS SETUP ---
+    // --- MEDIAPIPE & GESTURE LOGIC ---
     const hands = new Hands({locateFile: (file) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
     }});
 
     hands.setOptions({
-        maxNumHands: 1,
+        maxNumHands: 2,
         modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.7
+        minDetectionConfidence: 0.8,
+        minTrackingConfidence: 0.8
     });
 
+    let isPinching = false;
+    let lastPinchX = 0;
+    let initialPinchDistance = 0;
+    let initialCameraZ = 6;
+
+    // Συνάρτηση υπολογισμού απόστασης μεταξύ 2 σημείων (Pinch detection)
+    function getDistance(p1, p2) {
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
     hands.onResults((results) => {
-        // Καθαρισμός του canvas
-        canvasElement.width = window.innerWidth;
-        canvasElement.height = window.innerHeight;
-        canvasCtx.save();
-        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        const numHands = results.multiHandLandmarks.length;
+        let currentStatus = "READY";
 
-        if (results.multiHandLandmarks) {
-            for (const landmarks of results.multiHandLandmarks) {
-                // Σχεδίαση των αισθητήρων και των συνδέσεων
-                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00e5ff', lineWidth: 3});
-                drawLandmarks(canvasCtx, landmarks, {color: '#ffffff', lineWidth: 1, radius: 4});
-
-                // Έλεγχος της Γης με το κέντρο της παλάμης
-                const palm = landmarks[9];
-                const targetX = (palm.x - 0.5) * -10;
-                const targetY = (palm.y - 0.5) * -10;
-                
-                earth.position.x = targetX;
-                earth.position.y = targetY;
-
-                // Δυναμικό Zoom βάσει ύψους αντίχειρα
-                camera.position.z = 4 + (palm.y * 2);
+        // --- ΛΟΓΙΚΗ ΓΙΑ ΕΝΑ ΧΕΡΙ (ΠΕΡΙΣΤΡΟΦΗ) ---
+        if (numHands === 1) {
+            const landmarks = results.multiHandLandmarks[0];
+            const thumbTip = landmarks[4];
+            const indexTip = landmarks[8];
+            
+            // Αν η απόσταση αντίχειρα-δείκτη είναι μικρή, θεωρούμε "Pinch"
+            const pinchDist = getDistance(thumbTip, indexTip);
+            
+            if (pinchDist < 0.04) {
+                if (!isPinching) {
+                    isPinching = true;
+                    lastPinchX = thumbTip.x;
+                }
+                currentStatus = "ACTION: ROTATE";
+                // Υπολογισμός περιστροφής βάσει της κίνησης του χεριού
+                const deltaX = thumbTip.x - lastPinchX;
+                earth.rotation.y += deltaX * 5;
+                lastPinchX = thumbTip.x;
+            } else {
+                isPinching = false;
             }
+        } 
+        
+        // --- ΛΟΓΙΚΗ ΓΙΑ ΔΥΟ ΧΕΡΙΑ (ZOOM) ---
+        else if (numHands === 2) {
+            const hand1 = results.multiHandLandmarks[0];
+            const hand2 = results.multiHandLandmarks[1];
+            
+            // Pinch και στα δύο χέρια
+            const pinch1 = getDistance(hand1[4], hand1[8]) < 0.04;
+            const pinch2 = getDistance(hand2[4], hand2[8]) < 0.04;
+
+            if (pinch1 && pinch2) {
+                // Υπολογισμός απόστασης μεταξύ των δύο χεριών
+                const currentDist = getDistance(hand1[9], hand2[9]); // Middle of palm
+
+                if (initialPinchDistance === 0) {
+                    initialPinchDistance = currentDist;
+                    initialCameraZ = camera.position.z;
+                }
+                
+                currentStatus = "ACTION: ZOOM";
+                
+                // Υπολογισμός Zoom
+                const scaleFactor = (currentDist / initialPinchDistance);
+                let newZ = initialCameraZ / scaleFactor;
+                
+                // Όρια Zoom
+                if (newZ < 2.5) newZ = 2.5;
+                if (newZ > 10) newZ = 10;
+                
+                camera.position.z = newZ;
+            } else {
+                initialPinchDistance = 0;
+            }
+        } else {
+            isPinching = false;
+            initialPinchDistance = 0;
         }
-        canvasCtx.restore();
+
+        statusElement.innerText = currentStatus;
     });
 
     // Εκκίνηση Κάμερας
@@ -161,7 +181,6 @@
     // Loop
     function animate() {
         requestAnimationFrame(animate);
-        earth.rotation.y += 0.005;
         renderer.render(scene, camera);
     }
 
