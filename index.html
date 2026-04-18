@@ -1,419 +1,872 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salonicas Vision OS</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Salonicas Vision OS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
 
-        :root {
-            --neon-cyan: #00f2ff;
-            --dark-background: #1a1a1d;
-            --light-gray: #e0e0e0;
-            --medium-gray: #a0a0a0;
-        }
+  :root {
+    --cyan: #00f2ff;
+    --cyan-dim: rgba(0,242,255,0.15);
+    --cyan-mid: rgba(0,242,255,0.4);
+    --cyan-glow: 0 0 10px #00f2ff, 0 0 20px #00f2ff, 0 0 40px rgba(0,242,255,0.4);
+    --dark: #020408;
+    --panel: rgba(5, 15, 25, 0.85);
+  }
 
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--dark-background);
-            color: var(--light-gray);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100vw;
-            position: relative;
-        }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--dark-background);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            font-size: 2em;
-            color: var(--neon-cyan);
-            transition: opacity 0.5s ease-in-out;
-        }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--dark);
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--cyan);
+    touch-action: none;
+  }
 
-        .loading-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
+  /* LOADING SCREEN */
+  #loading-screen {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--dark);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 24px;
+    transition: opacity 0.8s ease;
+  }
+  #loading-screen.hidden { opacity: 0; pointer-events: none; }
 
-        .split-screen {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
+  .loader-ring {
+    width: 80px; height: 80px;
+    border: 2px solid transparent;
+    border-top-color: var(--cyan);
+    border-right-color: var(--cyan);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    box-shadow: var(--cyan-glow);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-        .top-section {
-            flex: 0.6;
-            position: relative;
-            background-color: var(--dark-background);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+  .loader-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--cyan);
+    text-shadow: var(--cyan-glow);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-        .bottom-section {
-            flex: 0.4;
-            position: relative;
-            background-color: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
+  .loader-sub {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgba(0,242,255,0.5);
+    text-transform: uppercase;
+  }
 
-        #webcamVideo {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1); /* Mirror the feed */
-        }
+  /* MAIN LAYOUT */
+  #app {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+  }
 
-        #webcamCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-        }
+  /* TOP — 3D SPACE */
+  #space-section {
+    position: relative;
+    width: 100%; height: 60%;
+    overflow: hidden;
+    background: #000005;
+  }
 
-        .branding {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            font-size: 1.2em;
-            font-weight: 700;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+  #three-canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+  }
 
-        .branding .greek-flag {
-            width: 30px;
-            height: 20px;
-            background: linear-gradient(to bottom, white 50%, #005eff 50%);
-            position: relative;
-        }
+  /* HUD overlays */
+  .hud-corner {
+    position: absolute;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    text-shadow: 0 0 8px var(--cyan);
+    pointer-events: none;
+  }
+  .hud-tl { top: 12px; left: 14px; }
+  .hud-tr { top: 12px; right: 14px; text-align: right; }
+  .hud-bl { bottom: 12px; left: 14px; }
 
-        .branding .greek-flag::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: repeating-linear-gradient(
-                to bottom,
-                white 0, white 10px,
-                #005eff 10px, #005eff 20px
-            );
-        }
+  .hud-line { opacity: 0.6; margin-bottom: 3px; }
+  .hud-bright { opacity: 1; }
 
-        .branding .greek-flag::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: repeating-linear-gradient(
-                to right,
-                white 0, white 15px,
-                #005eff 15px, #005eff 30px
-            );
-        }
+  /* Corner brackets */
+  .bracket {
+    position: absolute;
+    width: 20px; height: 20px;
+    pointer-events: none;
+  }
+  .bracket::before, .bracket::after {
+    content: '';
+    position: absolute;
+    background: var(--cyan);
+    box-shadow: 0 0 6px var(--cyan);
+  }
+  .bracket.tl { top: 8px; left: 8px; }
+  .bracket.tl::before { top:0;left:0;width:2px;height:12px; }
+  .bracket.tl::after  { top:0;left:0;width:12px;height:2px; }
+  .bracket.tr { top: 8px; right: 8px; }
+  .bracket.tr::before { top:0;right:0;width:2px;height:12px; }
+  .bracket.tr::after  { top:0;right:0;width:12px;height:2px; }
+  .bracket.bl { bottom: 8px; left: 8px; }
+  .bracket.bl::before { bottom:0;left:0;width:2px;height:12px; }
+  .bracket.bl::after  { bottom:0;left:0;width:12px;height:2px; }
+  .bracket.br { bottom: 8px; right: 8px; }
+  .bracket.br::before { bottom:0;right:0;width:2px;height:12px; }
+  .bracket.br::after  { bottom:0;right:0;width:12px;height:2px; }
 
-        .branding .greek-flag::before,
-        .branding .greek-flag::after {
-            mix-blend-mode: multiply;
-            opacity: 0.7;
-        }
-        .branding .greek-flag {
-            box-shadow: 0 0 5px var(--neon-cyan);
-        }
+  /* Divider */
+  #divider {
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    box-shadow: 0 0 12px var(--cyan), 0 0 24px rgba(0,242,255,0.3);
+    position: relative; z-index: 10;
+    flex-shrink: 0;
+  }
 
-        /* Responsive adjustments for mobile */
-        @media (max-width: 600px) {
-            .branding {
-                font-size: 1em;
-                bottom: 10px;
-                right: 10px;
-            }
-            .branding .greek-flag {
-                width: 25px;
-                height: 17px;
-            }
-        }
-    </style>
+  #divider::before {
+    content: 'SALONICAS VISION OS';
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 5px;
+    color: var(--cyan);
+    text-shadow: var(--cyan-glow);
+    background: var(--dark);
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  /* BOTTOM — WEBCAM */
+  #cam-section {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    overflow: hidden;
+    background: #000;
+  }
+
+  #webcam {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* mirror */
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  #webcam.active { opacity: 0.9; }
+
+  #hand-canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    transform: scaleX(-1);
+    pointer-events: none;
+  }
+
+  /* Scanline effect */
+  #cam-section::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Vignette */
+  #cam-vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,30,0.7) 100%);
+    pointer-events: none; z-index: 4;
+  }
+
+  /* Cam HUD */
+  .cam-hud {
+    position: absolute;
+    font-family: 'Orbitron', monospace;
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    text-shadow: 0 0 6px var(--cyan);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .cam-hud-tl { top: 10px; left: 12px; }
+  .cam-hud-tr { top: 10px; right: 12px; text-align: right; }
+
+  /* Status dot */
+  .status-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    animation: blink 2s ease-in-out infinite;
+    vertical-align: middle;
+    margin-right: 5px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* BRANDING bottom-right */
+  #branding {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    z-index: 20;
+    display: flex; align-items: center; gap: 8px;
+    pointer-events: none;
+  }
+
+  #branding-text {
+    text-align: right;
+    font-family: 'Orbitron', monospace;
+  }
+  #branding-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--cyan);
+    text-shadow: var(--cyan-glow);
+    display: block;
+  }
+  #branding-sub {
+    font-size: 7px;
+    letter-spacing: 2px;
+    color: rgba(0,242,255,0.5);
+    display: block;
+  }
+
+  /* Greek flag mini */
+  #greek-flag {
+    width: 28px; height: 19px;
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 0 6px rgba(0,242,255,0.5);
+    flex-shrink: 0;
+  }
+
+  /* Gesture indicator */
+  #gesture-hud {
+    position: absolute;
+    bottom: 14px; left: 14px;
+    z-index: 20;
+    font-family: 'Orbitron', monospace;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: var(--cyan);
+    text-shadow: 0 0 6px var(--cyan);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  #gesture-hud.visible { opacity: 1; }
+
+  /* Cam border glow */
+  #cam-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    border: 1px solid rgba(0,242,255,0.2);
+    pointer-events: none; z-index: 15;
+  }
+
+  /* Time display */
+  #clock {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--cyan);
+    text-shadow: var(--cyan-glow);
+  }
+
+  /* Crosshair in space */
+  #crosshair {
+    position: absolute;
+    width: 20px; height: 20px;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: left 0.05s, top 0.05s;
+  }
+  #crosshair::before, #crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(0,242,255,0.7);
+    box-shadow: 0 0 6px var(--cyan);
+  }
+  #crosshair::before { top:50%;left:0;width:100%;height:1px;transform:translateY(-50%); }
+  #crosshair::after  { top:0;left:50%;height:100%;width:1px;transform:translateX(-50%); }
+
+  /* Zoom readout */
+  #zoom-hud {
+    position: absolute;
+    bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    text-shadow: 0 0 8px var(--cyan);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 10;
+  }
+</style>
 </head>
 <body>
-    <div class="loading-overlay">Loading Salonicas Vision OS...</div>
 
-    <div class="split-screen">
-        <div class="top-section">
-            <div id="threejs-container"></div>
-        </div>
-        <div class="bottom-section">
-            <video id="webcamVideo" autoplay playsinline></video>
-            <canvas id="webcamCanvas"></canvas>
-        </div>
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loader-ring"></div>
+  <div class="loader-text">INITIALIZING VISION OS</div>
+  <div class="loader-sub">Requesting camera access…</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SPACE SECTION -->
+  <div id="space-section">
+    <canvas id="three-canvas"></canvas>
+    <div id="crosshair"></div>
+
+    <div class="bracket tl"></div>
+    <div class="bracket tr"></div>
+    <div class="bracket bl"></div>
+    <div class="bracket br"></div>
+
+    <div class="hud-corner hud-tl">
+      <div class="hud-line">SYS // SPATIAL RENDER</div>
+      <div class="hud-bright" id="clock">--:--:--</div>
     </div>
-
-    <div class="branding">
-        Salonicas
-        <div class="greek-flag"></div>
+    <div class="hud-corner hud-tr">
+      <div class="hud-line">EARTH-1 // LIVE</div>
+      <div class="hud-bright" id="coords">X:0.00 Y:0.00</div>
     </div>
+    <div class="hud-corner hud-bl">
+      <div class="hud-line" id="zoom-label">ZOOM: 1.00×</div>
+    </div>
+    <div id="zoom-hud">◈ PINCH TO ZOOM</div>
+  </div>
 
-    <!-- CDNs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <div id="divider"></div>
 
-    <script>
-        const loadingOverlay = document.querySelector('.loading-overlay');
-        const webcamVideo = document.getElementById('webcamVideo');
-        const webcamCanvas = document.getElementById('webcamCanvas');
-        const ctx = webcamCanvas.getContext('2d');
-        const threejsContainer = document.getElementById('threejs-container');
+  <!-- CAM SECTION -->
+  <div id="cam-section">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="hand-canvas"></canvas>
+    <div id="cam-vignette"></div>
 
-        // --- Three.js Setup ---
-        let scene, camera, renderer, earthMesh;
-        let targetEarthRotationY = 0;
-        let earthRotationSpeed = 0.0005; // Slow rotation
-        let cameraControls = { zoom: 1 };
-        let isEarthLoaded = false;
+    <div class="bracket tl"></div>
+    <div class="bracket tr"></div>
+    <div class="bracket bl"></div>
+    <div class="bracket br"></div>
 
-        function initThreeJS() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0a0a0a); // Very dark background for 3D
+    <div class="cam-hud cam-hud-tl">
+      <span class="status-dot"></span>HAND TRACK // LIVE
+    </div>
+    <div class="cam-hud cam-hud-tr" id="hand-status">-- HANDS</div>
 
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, threejsContainer.offsetWidth / threejsContainer.offsetHeight, 0.1, 1000);
-            camera.position.z = 5;
+    <div id="gesture-hud">● PINCH DETECTED</div>
 
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(threejsContainer.offsetWidth, threejsContainer.offsetHeight);
-            threejsContainer.appendChild(renderer.domElement);
+    <div id="branding">
+      <div id="branding-text">
+        <span id="branding-name">SALONICAS</span>
+        <span id="branding-sub">VISION OS · Θεσσαλονίκη</span>
+      </div>
+      <!-- Greek flag SVG -->
+      <svg id="greek-flag" viewBox="0 0 27 18" xmlns="http://www.w3.org/2000/svg">
+        <rect width="27" height="18" fill="#0D5EAF"/>
+        <rect y="0"  width="27" height="2" fill="#0D5EAF"/>
+        <rect y="2"  width="27" height="2" fill="white"/>
+        <rect y="4"  width="27" height="2" fill="#0D5EAF"/>
+        <rect y="6"  width="27" height="2" fill="white"/>
+        <rect y="8"  width="27" height="2" fill="#0D5EAF"/>
+        <rect y="10" width="27" height="2" fill="white"/>
+        <rect y="12" width="27" height="2" fill="#0D5EAF"/>
+        <rect y="14" width="27" height="2" fill="white"/>
+        <rect y="16" width="27" height="2" fill="#0D5EAF"/>
+        <!-- Cross canton -->
+        <rect x="0" y="0" width="11" height="10" fill="#0D5EAF"/>
+        <rect x="4" y="0" width="3" height="10" fill="white"/>
+        <rect x="0" y="3.5" width="11" height="3" fill="white"/>
+      </svg>
+    </div>
+  </div>
+</div>
 
-            // Lighting (Subtle, futuristic glow)
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
-            scene.add(ambientLight);
+<!-- CDNs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
+<script>
+// ─────────────────────────────────────────────
+// CLOCK
+// ─────────────────────────────────────────────
+const clockEl = document.getElementById('clock');
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  clockEl.textContent = `${hh}:${mm}:${ss}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
 
-            // Earth Geometry & Material
-            const geometry = new THREE.SphereGeometry(1, 64, 64);
-            const textureLoader = new THREE.TextureLoader();
-            const earthTexture = textureLoader.load('https://threejs.org/examples/textures/land_ocean_map.jpg'); // A common Earth texture
-            const material = new THREE.MeshStandardMaterial({
-                map: earthTexture,
-                roughness: 0.8,
-                metalness: 0.1,
-                color: 0xc0c0c0 // Slightly metallic sheen
-            });
+// ─────────────────────────────────────────────
+// THREE.JS — SPACE + EARTH
+// ─────────────────────────────────────────────
+const spaceSection = document.getElementById('space-section');
+const threeCanvas  = document.getElementById('three-canvas');
 
-            earthMesh = new THREE.Mesh(geometry, material);
-            scene.add(earthMesh);
-            isEarthLoaded = true;
+const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(spaceSection.clientWidth, spaceSection.clientHeight);
 
-            animate();
-        }
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, spaceSection.clientWidth / spaceSection.clientHeight, 0.1, 1000);
+camera.position.z = 3;
 
-        function animate() {
-            if (!isEarthLoaded) return;
+// Stars
+const starGeo = new THREE.BufferGeometry();
+const starCount = 2500;
+const starPos = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount * 3; i++) starPos[i] = (Math.random() - 0.5) * 200;
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, sizeAttenuation: true });
+scene.add(new THREE.Points(starGeo, starMat));
 
-            requestAnimationFrame(animate);
+// Procedural Earth
+const earthGeo = new THREE.SphereGeometry(1, 64, 64);
 
-            // Smoothly rotate the Earth
-            earthMesh.rotation.y += earthRotationSpeed;
+// Canvas-based procedural Earth texture
+function makeEarthTexture(size = 512) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
 
-            // Make Earth follow hand in X and Y
-            // We'll update this based on hand tracking data
+  // Ocean
+  const grad = ctx.createLinearGradient(0,0,0,size);
+  grad.addColorStop(0,   '#0a1a3a');
+  grad.addColorStop(0.5, '#0d2b5c');
+  grad.addColorStop(1,   '#081530');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
 
-            // Apply zoom to camera
-            camera.position.z = 5 * cameraControls.zoom;
-            camera.lookAt(scene.position); // Ensure camera always looks at the center
+  // Continents (simplified blobs)
+  ctx.fillStyle = '#1a4a2e';
+  const continents = [
+    {x:0.20, y:0.35, rx:0.12, ry:0.18}, // Americas
+    {x:0.52, y:0.35, rx:0.10, ry:0.16}, // Europe/Africa
+    {x:0.72, y:0.38, rx:0.13, ry:0.14}, // Asia
+    {x:0.80, y:0.60, rx:0.07, ry:0.07}, // Australia
+    {x:0.50, y:0.90, rx:0.14, ry:0.05}, // Antarctica
+  ];
+  for (const cn of continents) {
+    ctx.beginPath();
+    ctx.ellipse(cn.x*size, cn.y*size, cn.rx*size, cn.ry*size, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Noise bumps
+    for (let b = 0; b < 6; b++) {
+      ctx.beginPath();
+      ctx.ellipse(
+        (cn.x + (Math.random()-0.5)*cn.rx*1.4)*size,
+        (cn.y + (Math.random()-0.5)*cn.ry*1.4)*size,
+        cn.rx*size*(0.2+Math.random()*0.3),
+        cn.ry*size*(0.2+Math.random()*0.3),
+        Math.random()*Math.PI, 0, Math.PI*2
+      );
+      ctx.fill();
+    }
+  }
 
-            renderer.render(scene, camera);
-        }
+  // Polar ice
+  ctx.fillStyle = 'rgba(180,220,255,0.7)';
+  ctx.beginPath(); ctx.ellipse(size*0.5, 0,      size*0.18, size*0.06, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(size*0.5, size,   size*0.20, size*0.05, 0, 0, Math.PI*2); ctx.fill();
 
-        function onWindowResize() {
-            if (!isEarthLoaded) return;
-            camera.aspect = threejsContainer.offsetWidth / threejsContainer.offsetHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(threejsContainer.offsetWidth, threejsContainer.offsetHeight);
-        }
+  // Atmosphere glow edge
+  ctx.strokeStyle = 'rgba(0,180,255,0.15)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(0,0,size,size);
 
-        // --- Webcam and MediaPipe Setup ---
-        let hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
+  // ── Lat / Long grid overlay (Vision OS high-tech look) ──
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 242, 255, 0.18)';
+  ctx.lineWidth = 0.6;
+  // Latitude lines (horizontal)
+  const latSteps = 12;
+  for (let i = 1; i < latSteps; i++) {
+    const y = (i / latSteps) * size;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(size, y);
+    ctx.stroke();
+  }
+  // Longitude lines (vertical)
+  const lonSteps = 24;
+  for (let i = 1; i < lonSteps; i++) {
+    const x = (i / lonSteps) * size;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, size);
+    ctx.stroke();
+  }
+  // Equator accent
+  ctx.strokeStyle = 'rgba(0, 242, 255, 0.38)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(0, size * 0.5);
+  ctx.lineTo(size, size * 0.5);
+  ctx.stroke();
+  // Prime meridian accent
+  ctx.beginPath();
+  ctx.moveTo(size * 0.5, 0);
+  ctx.lineTo(size * 0.5, size);
+  ctx.stroke();
+  ctx.restore();
 
-        hands.setOptions({
-            staticImageMode: false,
-            maxNumHands: 2,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-        });
+  return new THREE.CanvasTexture(c);
+}
 
-        let isCameraReady = false;
+const earthTex = makeEarthTexture(512);
 
-        async function startWebcam() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                webcamVideo.srcObject = stream;
-                webcamVideo.onloadedmetadata = () => {
-                    webcamCanvas.width = webcamVideo.videoWidth;
-                    webcamCanvas.height = webcamVideo.videoHeight;
-                    ctx.canvas.width = webcamVideo.videoWidth;
-                    ctx.canvas.height = webcamVideo.videoHeight;
-                    isCameraReady = true;
-                    loadingOverlay.classList.add('hidden'); // Hide loading when camera is ready
-                    hands.onResults(onResults);
-                    processVideo();
-                };
-            } catch (err) {
-                console.error("Error accessing webcam:", err);
-                loadingOverlay.innerHTML = "Camera access denied. Please grant permission.";
-                // Keep loading overlay visible, but with an error message
-            }
-        }
+const earthMat = new THREE.MeshPhongMaterial({
+  map: earthTex,
+  specular: new THREE.Color(0x004466),
+  shininess: 30,
+  emissive: new THREE.Color(0x001122),
+  emissiveIntensity: 0.15,
+});
+const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+scene.add(earthMesh);
 
-        function processVideo() {
-            if (!isCameraReady) return;
-            ctx.drawImage(webcamVideo, 0, 0, webcamCanvas.width, webcamCanvas.height);
-            hands.send({ image: webcamVideo });
-            requestAnimationFrame(processVideo);
-        }
+// Atmosphere halo
+const atmoGeo = new THREE.SphereGeometry(1.045, 64, 64);
+const atmoMat = new THREE.MeshPhongMaterial({
+  color: 0x004488,
+  transparent: true,
+  opacity: 0.18,
+  side: THREE.FrontSide,
+  depthWrite: false,
+});
+scene.add(new THREE.Mesh(atmoGeo, atmoMat));
 
-        let lastHandLandmarks = null;
-        let pinchStartDistance = null;
-        let pinchStartZoom = 1;
-        let activePinch = false;
+// Grid / wireframe overlay
+const wireGeo = new THREE.SphereGeometry(1.01, 18, 18);
+const wireMat = new THREE.MeshBasicMaterial({
+  color: 0x00f2ff,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.04,
+});
+scene.add(new THREE.Mesh(wireGeo, wireMat));
 
-        function onResults(results) {
-            ctx.save();
-            ctx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
-            ctx.drawImage(webcamVideo, 0, 0, webcamCanvas.width, webcamCanvas.height);
+// Lights
+const ambLight = new THREE.AmbientLight(0x112244, 0.6);
+scene.add(ambLight);
+const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+sunLight.position.set(5, 3, 5);
+scene.add(sunLight);
+const rimLight = new THREE.DirectionalLight(0x0044ff, 0.3);
+rimLight.position.set(-5, -2, -5);
+scene.add(rimLight);
 
-            const videoWidth = webcamCanvas.width;
-            const videoHeight = webcamCanvas.height;
+// Earth control state
+let earthTargetX = 0;
+let earthTargetY = 0;
+let earthCurrentX = 0;
+let earthCurrentY = 0;
+let zoomTarget = 3;
+let zoomCurrent = 3;
+// Track last valid palm position to avoid jumps on tracking loss
+let lastValidX = 0;
+let lastValidY = 0;
+const coordsEl = document.getElementById('coords');
+const zoomLabelEl = document.getElementById('zoom-label');
+const crosshair = document.getElementById('crosshair');
 
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                lastHandLandmarks = results.multiHandLandmarks; // Store for 3D interaction
+// Group all earth objects so they move together cleanly
+const earthGroup = new THREE.Group();
+scene.add(earthGroup);
+earthGroup.add(earthMesh);
+// Move atmo + wire into group (already added to scene above, re-parent them)
+scene.children
+  .filter(c => c !== earthGroup && c !== ambLight && c !== sunLight && c !== rimLight && !(c instanceof THREE.Points))
+  .forEach(c => { scene.remove(c); earthGroup.add(c); });
 
-                for (const landmarks of results.multiHandLandmarks) {
-                    // Drawing helper from MediaPipe
-                    drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: 'rgba(0, 242, 255, 0.8)', lineWidth: 2 });
-                    drawLandmarks(ctx, landmarks, { color: 'rgba(255, 255, 255, 1)', radius: 3 });
-                }
+function resizeThree() {
+  const w = spaceSection.clientWidth;
+  const h = spaceSection.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resizeThree);
 
-                // --- Pinch to Zoom Logic ---
-                if (results.multiHandLandmarks.length >= 2) {
-                    const hand1 = results.multiHandLandmarks[0];
-                    const hand2 = results.multiHandLandmarks[1];
+function animateThree() {
+  requestAnimationFrame(animateThree);
 
-                    // Use thumb and index finger tips for pinch detection
-                    const thumbTip1 = hand1[4];
-                    const indexTip1 = hand1[8];
-                    const thumbTip2 = hand2[4];
-                    const indexTip2 = hand2[8];
+  // Smooth lerp toward target
+  earthCurrentX += (earthTargetX - earthCurrentX) * 0.08;
+  earthCurrentY += (earthTargetY - earthCurrentY) * 0.08;
+  zoomCurrent    += (zoomTarget   - zoomCurrent)   * 0.06;
 
-                    // Calculate distance between closest points of two hands (e.g., index finger tips)
-                    const dist1 = Math.hypot(indexTip1.x * videoWidth - indexTip2.x * videoWidth, indexTip1.y * videoHeight - indexTip2.y * videoHeight);
-                    const dist2 = Math.hypot(thumbTip1.x * videoWidth - thumbTip2.x * videoWidth, thumbTip1.y * videoHeight - thumbTip2.y * videoHeight);
+  // Move the entire group (Earth + atmosphere + wireframe) together
+  earthGroup.position.x = earthCurrentX;
+  earthGroup.position.y = earthCurrentY;
 
-                    const currentDistance = Math.min(dist1, dist2); // Use the closer distance as a more sensitive indicator
+  camera.position.z = zoomCurrent;
+  earthMesh.rotation.y += 0.0018;
 
-                    if (!activePinch) {
-                        pinchStartDistance = currentDistance;
-                        pinchStartZoom = cameraControls.zoom;
-                        activePinch = true;
-                    } else {
-                        const deltaDistance = currentDistance - pinchStartDistance;
-                        const zoomFactor = deltaDistance / 200; // Adjust this divisor for sensitivity
-                        cameraControls.zoom = pinchStartZoom - zoomFactor; // Subtracting because larger distance means zooming out
-                        cameraControls.zoom = Math.max(0.5, Math.min(5, cameraControls.zoom)); // Clamp zoom level
-                    }
-                } else {
-                    activePinch = false; // Reset pinch if less than 2 hands detected
-                    pinchStartDistance = null;
-                }
+  coordsEl.textContent = `X:${earthCurrentX.toFixed(2)} Y:${earthCurrentY.toFixed(2)}`;
+  zoomLabelEl.textContent = `ZOOM: ${(3 / zoomCurrent).toFixed(2)}×`;
 
-                // --- 3D Earth Interaction ---
-                if (results.multiHandLandmarks.length > 0) {
-                    const hand = results.multiHandLandmarks[0]; // Use the first detected hand for movement
+  // Crosshair in screen space
+  const v = new THREE.Vector3(earthCurrentX, earthCurrentY, 0);
+  v.project(camera);
+  const halfW = spaceSection.clientWidth / 2;
+  const halfH = spaceSection.clientHeight / 2;
+  crosshair.style.left = (v.x * halfW + halfW) + 'px';
+  crosshair.style.top  = (-v.y * halfH + halfH) + 'px';
 
-                    // Get landmarks for wrist and palm base for relative movement
-                    const wrist = hand[0]; // Wrist is usually at index 0
-                    const baseOfPalm = hand[1]; // Base of palm is often at index 1
+  renderer.render(scene, camera);
+}
+animateThree();
 
-                    // Scale hand movement to influence 3D world movement
-                    // We want to map a portion of the screen's width/height to the camera's movement
-                    // Consider the center of the screen as the origin (0,0)
-                    const normalizedX = (wrist.x - 0.5) * 2; // -1 to 1 range
-                    const normalizedY = (wrist.y - 0.5) * -2; // -1 to 1 range (inverted for screen coords)
+// ─────────────────────────────────────────────
+// WEBCAM + MEDIAPIPE HANDS
+// ─────────────────────────────────────────────
+const videoEl    = document.getElementById('webcam');
+const handCanvas = document.getElementById('hand-canvas');
+const hCtx       = handCanvas.getContext('2d');
+const loadingScreen = document.getElementById('loading-screen');
+const handStatusEl  = document.getElementById('hand-status');
+const gestureEl     = document.getElementById('gesture-hud');
 
-                    // Adjust sensitivity of hand movement to earth movement
-                    const movementSensitivity = 1.5;
-                    const targetX = normalizedX * movementSensitivity;
-                    const targetY = normalizedY * movementSensitivity;
+// Fallback HAND_CONNECTIONS if CDN did not expose the global
+const HAND_CONNECTIONS_FALLBACK = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],
+  [0,17]
+];
 
-                    // Smoothly interpolate the Earth's position (or camera's target)
-                    // For now, we'll move the earth mesh directly
-                    earthMesh.position.x = targetX;
-                    earthMesh.position.y = targetY;
-                } else {
-                    // If no hands are detected, gently return earth to center
-                    earthMesh.position.x = THREE.MathUtils.lerp(earthMesh.position.x, 0, 0.1);
-                    earthMesh.position.y = THREE.MathUtils.lerp(earthMesh.position.y, 0, 0.1);
-                }
+let prevPinchDist = null;
+let gestureTimeout = null;
+// Deadzone: only update earth target if delta > threshold (avoids micro-jitter)
+const POSITION_THRESHOLD = 0.005;
 
-            } else {
-                lastHandLandmarks = null;
-                activePinch = false; // Reset pinch if no hands
-                pinchStartDistance = null;
+function showGesture(text) {
+  gestureEl.textContent = text;
+  gestureEl.classList.add('visible');
+  clearTimeout(gestureTimeout);
+  gestureTimeout = setTimeout(() => gestureEl.classList.remove('visible'), 1500);
+}
 
-                // Gently return earth to center if no hands detected
-                earthMesh.position.x = THREE.MathUtils.lerp(earthMesh.position.x, 0, 0.1);
-                earthMesh.position.y = THREE.MathUtils.lerp(earthMesh.position.y, 0, 0.1);
-            }
+// Resize hand canvas
+function resizeHandCanvas() {
+  const cs = document.getElementById('cam-section');
+  handCanvas.width  = cs.clientWidth;
+  handCanvas.height = cs.clientHeight;
+}
+window.addEventListener('resize', resizeHandCanvas);
+resizeHandCanvas();
 
-            ctx.restore();
-        }
+function onHandResults(results) {
+  hCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
 
-        // --- Initialization ---
-        // Start webcam first to handle permissions
-        startWebcam();
-        // Initialize Three.js after a short delay to ensure DOM elements are ready
-        // and to give webcam a chance to initialize without immediately blocking
-        setTimeout(initThreeJS, 100);
+  const hands = results.multiHandLandmarks || [];
 
+  // ── Performance guard: skip heavy work if no hands ──
+  if (hands.length === 0) {
+    handStatusEl.textContent = '-- HANDS';
+    prevPinchDist = null;
+    return;
+  }
 
-        // Add event listener for window resize
-        window.addEventListener('resize', onWindowResize);
+  handStatusEl.textContent = `${hands.length} HAND${hands.length > 1 ? 'S' : ''}`;
 
-    </script>
+  const W = handCanvas.width;
+  const H = handCanvas.height;
+
+  // Resolve connections (CDN global or fallback)
+  const CONNECTIONS = (typeof window.HAND_CONNECTIONS !== 'undefined' && window.HAND_CONNECTIONS)
+    ? window.HAND_CONNECTIONS
+    : HAND_CONNECTIONS_FALLBACK;
+
+  // ── Draw skeleton ──
+  for (const lm of hands) {
+    // Connectors
+    for (const [a, b] of CONNECTIONS) {
+      const pa = lm[a], pb = lm[b];
+      if (!pa || !pb) continue;
+      hCtx.beginPath();
+      hCtx.moveTo(pa.x * W, pa.y * H);
+      hCtx.lineTo(pb.x * W, pb.y * H);
+      hCtx.strokeStyle = '#00f2ff';
+      hCtx.lineWidth = 1.5;
+      hCtx.shadowColor = '#00f2ff';
+      hCtx.shadowBlur = 8;
+      hCtx.stroke();
+    }
+    hCtx.shadowBlur = 0;
+
+    // Landmark dots
+    for (const p of lm) {
+      hCtx.beginPath();
+      hCtx.arc(p.x * W, p.y * H, 3, 0, Math.PI * 2);
+      hCtx.fillStyle = 'white';
+      hCtx.shadowColor = '#00f2ff';
+      hCtx.shadowBlur = 10;
+      hCtx.fill();
+    }
+    hCtx.shadowBlur = 0;
+
+    // Fingertip accent glow
+    for (const tip of [4, 8, 12, 16, 20]) {
+      const p = lm[tip];
+      if (!p) continue;
+      hCtx.beginPath();
+      hCtx.arc(p.x * W, p.y * H, 5, 0, Math.PI * 2);
+      hCtx.fillStyle = 'rgba(0,242,255,0.75)';
+      hCtx.shadowColor = '#00f2ff';
+      hCtx.shadowBlur = 18;
+      hCtx.fill();
+      hCtx.shadowBlur = 0;
+    }
+  }
+
+  // ── HAND CONTROL — smooth inversion with deadzone ──
+  if (hands.length === 1) {
+    const palm = hands[0][9];
+    if (palm) {
+      // Mirror: webcam is flipped, so palm.x from MediaPipe is already in mirrored space.
+      // We negate X so Earth moves in the intuitive direction.
+      const nx = (palm.x - 0.5) * -2.4;
+      const ny = (palm.y - 0.5) * -2.0;
+      // Only update target if movement exceeds deadzone threshold
+      if (Math.abs(nx - earthTargetX) > POSITION_THRESHOLD) earthTargetX = nx;
+      if (Math.abs(ny - earthTargetY) > POSITION_THRESHOLD) earthTargetY = ny;
+      lastValidX = earthTargetX;
+      lastValidY = earthTargetY;
+    }
+    prevPinchDist = null;
+
+  } else if (hands.length === 2) {
+    const p0 = hands[0][9], p1 = hands[1][9];
+    if (p0 && p1) {
+      const mx = (p0.x + p1.x) / 2;
+      const my = (p0.y + p1.y) / 2;
+      const nx = (mx - 0.5) * -2.4;
+      const ny = (my - 0.5) * -2.0;
+      if (Math.abs(nx - earthTargetX) > POSITION_THRESHOLD) earthTargetX = nx;
+      if (Math.abs(ny - earthTargetY) > POSITION_THRESHOLD) earthTargetY = ny;
+      lastValidX = earthTargetX;
+      lastValidY = earthTargetY;
+    }
+
+    // Pinch-to-zoom: distance between index fingertips
+    const i0 = hands[0][8], i1 = hands[1][8];
+    if (i0 && i1) {
+      const dx = i0.x - i1.x;
+      const dy = i0.y - i1.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (prevPinchDist !== null) {
+        const delta = (prevPinchDist - dist) * 4;
+        zoomTarget = Math.max(1.5, Math.min(6, zoomTarget + delta));
+        if (Math.abs(delta) > 0.008) showGesture('◈ PINCH ZOOM');
+      }
+      prevPinchDist = dist;
+    }
+  }
+}
+
+// Initialize MediaPipe Hands
+async function initHands() {
+  console.log('«Σύστημα Vision OS: Εκκίνηση παρακολούθησης χεριών...»');
+
+  const hands = new Hands({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+  hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6,
+  });
+  hands.onResults(onHandResults);
+
+  // Start camera
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    videoEl.srcObject = stream;
+    await videoEl.play();
+
+    // Smooth fade-in of webcam video
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        videoEl.classList.add('active');
+      });
+    });
+
+    // Hide loader after fade starts
+    setTimeout(() => {
+      loadingScreen.classList.add('hidden');
+      setTimeout(() => loadingScreen.style.display = 'none', 900);
+    }, 300);
+
+    console.log('«Κάμερα ενεργοποιήθηκε — Έναρξη επεξεργασίας καρέ»');
+
+    // Process frames
+    const mpCam = new Camera(videoEl, {
+      onFrame: async () => {
+        await hands.send({ image: videoEl });
+      },
+      width: 640,
+      height: 480,
+    });
+    mpCam.start();
+
+  } catch (err) {
+    console.error('«Σφάλμα κάμερας»:', err.message);
+    document.querySelector('#loading-screen .loader-text').textContent = 'ΑΠΑΓΟΡΕΥΤΗΚΕ Η ΠΡΟΣΒΑΣΗ';
+    document.querySelector('#loading-screen .loader-sub').textContent = err.message;
+    document.querySelector('.loader-ring').style.borderColor = '#ff3355';
+    document.querySelector('.loader-ring').style.boxShadow = '0 0 20px #ff3355';
+  }
+}
+
+// Start on load
+window.addEventListener('load', () => {
+  console.log('«Salonicas Vision OS — Εκκίνηση συστήματος...»');
+  // Small delay so browser is ready
+  setTimeout(initHands, 400);
+});
+</script>
 </body>
 </html>
