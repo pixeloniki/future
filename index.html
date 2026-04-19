@@ -3,411 +3,383 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Salonicas Vision OS</title>
+<title>Salonicas · Chronos Hyper-Singularity OS</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&display=swap');
 
-  :root {
-    --cyan: #00f2ff;
-    --cyan-dim: rgba(0,242,255,0.15);
-    --cyan-mid: rgba(0,242,255,0.4);
-    --cyan-glow: 0 0 10px #00f2ff, 0 0 20px #00f2ff, 0 0 40px rgba(0,242,255,0.4);
-    --dark: #020408;
-    --panel: rgba(5, 15, 25, 0.85);
-  }
+:root {
+  --cyan:      #00f2ff;
+  --cyan2:     #00aaff;
+  --green:     #00ff88;
+  --orange:    #ff6a00;
+  --red:       #ff2244;
+  --dark:      #020509;
+  --glow-c:    0 0 8px #00f2ff, 0 0 20px rgba(0,242,255,0.5);
+  --glow-g:    0 0 8px #00ff88, 0 0 20px rgba(0,255,136,0.4);
+  --panel-bg:  rgba(4,14,26,0.88);
+}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
-    background: var(--dark);
-    font-family: 'Rajdhani', sans-serif;
-    color: var(--cyan);
-    touch-action: none;
-  }
+html, body {
+  width:100%; height:100%; overflow:hidden;
+  background: var(--dark);
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--cyan);
+  touch-action: none;
+  user-select: none;
+}
 
-  /* LOADING SCREEN */
-  #loading-screen {
-    position: fixed; inset: 0; z-index: 9999;
-    background: var(--dark);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 24px;
-    transition: opacity 0.8s ease;
-  }
-  #loading-screen.hidden { opacity: 0; pointer-events: none; }
+/* ── LOADING ── */
+#loading-screen {
+  position:fixed; inset:0; z-index:9999;
+  background: var(--dark);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:18px;
+  transition: opacity 1s ease;
+}
+#loading-screen.hidden { opacity:0; pointer-events:none; }
+#loading-screen.gone   { display:none; }
 
-  .loader-ring {
-    width: 80px; height: 80px;
-    border: 2px solid transparent;
-    border-top-color: var(--cyan);
-    border-right-color: var(--cyan);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    box-shadow: var(--cyan-glow);
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+.loader-orb {
+  width:90px; height:90px; position:relative;
+}
+.loader-orb::before, .loader-orb::after {
+  content:''; position:absolute; inset:0;
+  border-radius:50%;
+  border:2px solid transparent;
+  animation: spin 1.2s linear infinite;
+}
+.loader-orb::before {
+  border-top-color: var(--cyan);
+  border-right-color: var(--cyan);
+  box-shadow: var(--glow-c);
+}
+.loader-orb::after {
+  inset:12px;
+  border-bottom-color: #00ff88;
+  border-left-color: #00ff88;
+  animation-direction: reverse;
+  animation-duration: 0.8s;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
 
-  .loader-text {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.loader-title {
+  font-family:'Orbitron', monospace;
+  font-size:13px; letter-spacing:5px;
+  color: var(--cyan); text-shadow: var(--glow-c);
+  animation: pulse 2s ease-in-out infinite;
+}
+.loader-sub {
+  font-size:10px; letter-spacing:3px;
+  color:rgba(0,242,255,0.45); text-transform:uppercase;
+}
+#loader-status {
+  font-size:9px; letter-spacing:2px;
+  color:rgba(0,255,136,0.6); font-family:'Orbitron',monospace;
+  min-height:14px;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
 
-  .loader-sub {
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: rgba(0,242,255,0.5);
-    text-transform: uppercase;
-  }
+/* ── MAIN APP ── */
+#app {
+  width:100%; height:100%;
+  display:flex; flex-direction:column;
+  position:relative;
+}
 
-  /* MAIN LAYOUT */
-  #app {
-    width: 100%; height: 100%;
-    display: flex; flex-direction: column;
-  }
+/* ── SPACE ── */
+#space-section {
+  position:relative;
+  width:100%; height:60%;
+  overflow:hidden;
+  background:#000002;
+  flex-shrink:0;
+}
 
-  /* TOP — 3D SPACE */
-  #space-section {
-    position: relative;
-    width: 100%; height: 60%;
-    overflow: hidden;
-    background: #000005;
-  }
+#three-canvas {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  display:block;
+}
 
-  #three-canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-  }
+/* HUD */
+.hud {
+  position:absolute;
+  font-family:'Orbitron',monospace;
+  pointer-events:none; z-index:8;
+}
+.hud-tl { top:13px; left:14px; }
+.hud-tr { top:13px; right:14px; text-align:right; }
+.hud-bl { bottom:13px; left:14px; }
+.hud-br { bottom:13px; right:14px; text-align:right; }
 
-  /* HUD overlays */
-  .hud-corner {
-    position: absolute;
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--cyan);
-    text-shadow: 0 0 8px var(--cyan);
-    pointer-events: none;
-  }
-  .hud-tl { top: 12px; left: 14px; }
-  .hud-tr { top: 12px; right: 14px; text-align: right; }
-  .hud-bl { bottom: 12px; left: 14px; }
+.hud-label {
+  font-size:8px; letter-spacing:2.5px;
+  color:rgba(0,242,255,0.5);
+  margin-bottom:3px; display:block;
+}
+.hud-value {
+  font-size:11px; letter-spacing:2px;
+  color:var(--cyan); text-shadow:var(--glow-c);
+  display:block;
+}
+.hud-value.green { color:var(--green); text-shadow:var(--glow-g); }
 
-  .hud-line { opacity: 0.6; margin-bottom: 3px; }
-  .hud-bright { opacity: 1; }
+/* Mode badge */
+#mode-badge {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Orbitron',monospace;
+  font-size:10px; letter-spacing:4px;
+  padding:5px 14px;
+  border:1px solid var(--cyan);
+  background: rgba(0,242,255,0.07);
+  box-shadow: var(--glow-c), inset 0 0 12px rgba(0,242,255,0.05);
+  color:var(--cyan); text-shadow:var(--glow-c);
+  pointer-events:none; z-index:8;
+  opacity:0; transition:opacity 0.4s ease;
+  white-space:nowrap;
+}
+#mode-badge.show { opacity:1; }
 
-  /* Corner brackets */
-  .bracket {
-    position: absolute;
-    width: 20px; height: 20px;
-    pointer-events: none;
-  }
-  .bracket::before, .bracket::after {
-    content: '';
-    position: absolute;
-    background: var(--cyan);
-    box-shadow: 0 0 6px var(--cyan);
-  }
-  .bracket.tl { top: 8px; left: 8px; }
-  .bracket.tl::before { top:0;left:0;width:2px;height:12px; }
-  .bracket.tl::after  { top:0;left:0;width:12px;height:2px; }
-  .bracket.tr { top: 8px; right: 8px; }
-  .bracket.tr::before { top:0;right:0;width:2px;height:12px; }
-  .bracket.tr::after  { top:0;right:0;width:12px;height:2px; }
-  .bracket.bl { bottom: 8px; left: 8px; }
-  .bracket.bl::before { bottom:0;left:0;width:2px;height:12px; }
-  .bracket.bl::after  { bottom:0;left:0;width:12px;height:2px; }
-  .bracket.br { bottom: 8px; right: 8px; }
-  .bracket.br::before { bottom:0;right:0;width:2px;height:12px; }
-  .bracket.br::after  { bottom:0;right:0;width:12px;height:2px; }
+/* Brackets */
+.brk {
+  position:absolute; width:18px; height:18px;
+  pointer-events:none; z-index:7;
+}
+.brk::before,.brk::after {
+  content:''; position:absolute;
+  background:var(--cyan); box-shadow:0 0 5px var(--cyan);
+}
+.brk.tl { top:8px; left:8px; }
+.brk.tl::before { top:0;left:0;width:2px;height:12px; }
+.brk.tl::after  { top:0;left:0;width:12px;height:2px; }
+.brk.tr { top:8px; right:8px; }
+.brk.tr::before { top:0;right:0;width:2px;height:12px; }
+.brk.tr::after  { top:0;right:0;width:12px;height:2px; }
+.brk.bl { bottom:8px; left:8px; }
+.brk.bl::before { bottom:0;left:0;width:2px;height:12px; }
+.brk.bl::after  { bottom:0;left:0;width:12px;height:2px; }
+.brk.br { bottom:8px; right:8px; }
+.brk.br::before { bottom:0;right:0;width:2px;height:12px; }
+.brk.br::after  { bottom:0;right:0;width:12px;height:2px; }
 
-  /* Divider */
-  #divider {
-    width: 100%; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-    box-shadow: 0 0 12px var(--cyan), 0 0 24px rgba(0,242,255,0.3);
-    position: relative; z-index: 10;
-    flex-shrink: 0;
-  }
+/* Divider */
+#divider {
+  width:100%; height:2px; flex-shrink:0;
+  background:linear-gradient(90deg, transparent, var(--cyan), transparent);
+  box-shadow: 0 0 14px var(--cyan), 0 0 28px rgba(0,242,255,0.25);
+  position:relative; z-index:10;
+}
+#divider::before {
+  content:'CHRONOS · HYPER-SINGULARITY OS';
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Orbitron',monospace;
+  font-size:8px; letter-spacing:5px;
+  color:var(--cyan); text-shadow:var(--glow-c);
+  background:var(--dark); padding:0 12px;
+  white-space:nowrap;
+}
 
-  #divider::before {
-    content: 'SALONICAS VISION OS';
-    position: absolute;
-    left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 5px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-    background: var(--dark);
-    padding: 0 10px;
-    white-space: nowrap;
-  }
+/* ── CAM SECTION ── */
+#cam-section {
+  position:relative; width:100%; flex:1;
+  overflow:hidden; background:#000;
+}
 
-  /* BOTTOM — WEBCAM */
-  #cam-section {
-    position: relative;
-    width: 100%;
-    flex: 1;
-    overflow: hidden;
-    background: #000;
-  }
+#webcam {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  transform:scaleX(-1);
+  opacity:0; transition:opacity 1.4s ease;
+}
+#webcam.active { opacity:0.88; }
 
-  #webcam {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transform: scaleX(-1); /* mirror */
-    opacity: 0;
-    transition: opacity 1.2s ease;
-  }
-  #webcam.active { opacity: 0.9; }
+#hand-canvas {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  transform:scaleX(-1);
+  pointer-events:none; z-index:3;
+}
 
-  #hand-canvas {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    transform: scaleX(-1);
-    pointer-events: none;
-  }
+/* Waveform canvas (replaces text HUD) */
+#wave-canvas {
+  position:absolute; bottom:0; left:0;
+  width:100%; height:48px;
+  pointer-events:none; z-index:6;
+  opacity:0.7;
+}
 
-  /* Scanline effect */
-  #cam-section::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 5;
-  }
+/* Scanlines */
+#cam-section::after {
+  content:''; position:absolute; inset:0; z-index:5;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+  );
+  pointer-events:none;
+}
 
-  /* Vignette */
-  #cam-vignette {
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,30,0.7) 100%);
-    pointer-events: none; z-index: 4;
-  }
+/* Vignette */
+#cam-vignette {
+  position:absolute; inset:0; z-index:4; pointer-events:none;
+  background: radial-gradient(ellipse at center,
+    transparent 45%, rgba(0,0,20,0.72) 100%
+  );
+}
 
-  /* Cam HUD */
-  .cam-hud {
-    position: absolute;
-    font-family: 'Orbitron', monospace;
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--cyan);
-    text-shadow: 0 0 6px var(--cyan);
-    pointer-events: none;
-    z-index: 10;
-  }
-  .cam-hud-tl { top: 10px; left: 12px; }
-  .cam-hud-tr { top: 10px; right: 12px; text-align: right; }
+/* Cam HUDs */
+.cam-hud {
+  position:absolute;
+  font-family:'Orbitron',monospace;
+  font-size:8px; letter-spacing:2px;
+  color:var(--cyan); text-shadow:0 0 6px var(--cyan);
+  pointer-events:none; z-index:10;
+}
+.cam-hud-tl { top:10px; left:12px; }
+.cam-hud-tr { top:10px; right:12px; text-align:right; }
 
-  /* Status dot */
-  .status-dot {
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--cyan);
-    box-shadow: 0 0 8px var(--cyan);
-    animation: blink 2s ease-in-out infinite;
-    vertical-align: middle;
-    margin-right: 5px;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.sdot {
+  display:inline-block; width:6px; height:6px;
+  border-radius:50%; background:var(--cyan);
+  box-shadow:0 0 7px var(--cyan);
+  animation:blink 2s ease-in-out infinite;
+  vertical-align:middle; margin-right:5px;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
 
-  /* BRANDING bottom-right */
-  #branding {
-    position: absolute;
-    bottom: 14px; right: 14px;
-    z-index: 20;
-    display: flex; align-items: center; gap: 8px;
-    pointer-events: none;
-  }
+/* Mode indicator ring in cam section */
+#mode-ring {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:70px; height:70px; border-radius:50%;
+  border:2px solid var(--cyan);
+  box-shadow: var(--glow-c), inset 0 0 10px rgba(0,242,255,0.08);
+  pointer-events:none; z-index:8;
+  opacity:0; transition:opacity 0.4s ease;
+}
+#mode-ring.show { opacity:0.6; }
+#mode-ring.sentinel { border-color:var(--orange); box-shadow:0 0 8px var(--orange); }
+#mode-ring.oracle   { border-color:var(--green);  box-shadow:0 0 8px var(--green); }
 
-  #branding-text {
-    text-align: right;
-    font-family: 'Orbitron', monospace;
-  }
-  #branding-name {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-    display: block;
-  }
-  #branding-sub {
-    font-size: 7px;
-    letter-spacing: 2px;
-    color: rgba(0,242,255,0.5);
-    display: block;
-  }
+/* BRANDING */
+#branding {
+  position:absolute; bottom:14px; right:14px;
+  z-index:20; display:flex; align-items:center; gap:8px;
+  pointer-events:none;
+}
+#branding-text { text-align:right; font-family:'Orbitron',monospace; }
+#branding-name {
+  font-size:11px; font-weight:700; letter-spacing:3px;
+  color:var(--cyan); text-shadow:var(--glow-c); display:block;
+}
+#branding-sub {
+  font-size:7px; letter-spacing:2px;
+  color:rgba(0,242,255,0.45); display:block;
+}
+#greek-flag {
+  width:28px; height:19px; border-radius:2px; overflow:hidden;
+  box-shadow:0 0 6px rgba(0,242,255,0.4); flex-shrink:0;
+}
 
-  /* Greek flag mini */
-  #greek-flag {
-    width: 28px; height: 19px;
-    border-radius: 2px;
-    overflow: hidden;
-    box-shadow: 0 0 6px rgba(0,242,255,0.5);
-    flex-shrink: 0;
-  }
+/* Copernicus readout */
+#copernicus-banner {
+  position:absolute; bottom:46px; left:50%;
+  transform:translateX(-50%);
+  font-family:'Orbitron',monospace; font-size:7px;
+  letter-spacing:2px; color:rgba(0,242,255,0.35);
+  white-space:nowrap; pointer-events:none; z-index:10;
+}
 
-  /* Gesture indicator */
-  #gesture-hud {
-    position: absolute;
-    bottom: 14px; left: 14px;
-    z-index: 20;
-    font-family: 'Orbitron', monospace;
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: var(--cyan);
-    text-shadow: 0 0 6px var(--cyan);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-  #gesture-hud.visible { opacity: 1; }
-
-  /* Cam border glow */
-  #cam-section::before {
-    content: '';
-    position: absolute; inset: 0;
-    border: 1px solid rgba(0,242,255,0.2);
-    pointer-events: none; z-index: 15;
-  }
-
-  /* Time display */
-  #clock {
-    font-family: 'Orbitron', monospace;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    color: var(--cyan);
-    text-shadow: var(--cyan-glow);
-  }
-
-  /* Crosshair in space */
-  #crosshair {
-    position: absolute;
-    width: 20px; height: 20px;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
-    transition: left 0.05s, top 0.05s;
-  }
-  #crosshair::before, #crosshair::after {
-    content: '';
-    position: absolute;
-    background: rgba(0,242,255,0.7);
-    box-shadow: 0 0 6px var(--cyan);
-  }
-  #crosshair::before { top:50%;left:0;width:100%;height:1px;transform:translateY(-50%); }
-  #crosshair::after  { top:0;left:50%;height:100%;width:1px;transform:translateX(-50%); }
-
-  /* Zoom readout */
-  #zoom-hud {
-    position: absolute;
-    bottom: 14px; left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--cyan);
-    text-shadow: 0 0 8px var(--cyan);
-    opacity: 0.7;
-    pointer-events: none;
-    z-index: 10;
-  }
+/* Cam border */
+#cam-section::before {
+  content:''; position:absolute; inset:0; z-index:15;
+  border:1px solid rgba(0,242,255,0.18);
+  pointer-events:none;
+}
 </style>
 </head>
 <body>
 
 <!-- LOADING -->
 <div id="loading-screen">
-  <div class="loader-ring"></div>
-  <div class="loader-text">INITIALIZING VISION OS</div>
-  <div class="loader-sub">Requesting camera access…</div>
+  <div class="loader-orb"></div>
+  <div class="loader-title">PROJECT CHRONOS</div>
+  <div class="loader-sub">Salonicas Hyper-Singularity OS</div>
+  <div id="loader-status">Αρχικοποίηση μηχανής χωρο-χρόνου…</div>
 </div>
 
 <!-- APP -->
 <div id="app">
 
-  <!-- SPACE SECTION -->
+  <!-- SPACE -->
   <div id="space-section">
     <canvas id="three-canvas"></canvas>
-    <div id="crosshair"></div>
 
-    <div class="bracket tl"></div>
-    <div class="bracket tr"></div>
-    <div class="bracket bl"></div>
-    <div class="bracket br"></div>
+    <div class="brk tl"></div><div class="brk tr"></div>
+    <div class="brk bl"></div><div class="brk br"></div>
 
-    <div class="hud-corner hud-tl">
-      <div class="hud-line">SYS // SPATIAL RENDER</div>
-      <div class="hud-bright" id="clock">--:--:--</div>
+    <div class="hud hud-tl">
+      <span class="hud-label">GEO-INTELLIGENCE · LIVE</span>
+      <span class="hud-value" id="clock">--:--:--</span>
     </div>
-    <div class="hud-corner hud-tr">
-      <div class="hud-line">EARTH-1 // LIVE</div>
-      <div class="hud-bright" id="coords">X:0.00 Y:0.00</div>
+    <div class="hud hud-tr">
+      <span class="hud-label">COORDINATES</span>
+      <span class="hud-value" id="coords">LAT 40.64° LON 22.94°</span>
     </div>
-    <div class="hud-corner hud-bl">
-      <div class="hud-line" id="zoom-label">ZOOM: 1.00×</div>
+    <div class="hud hud-bl">
+      <span class="hud-label">MODE</span>
+      <span class="hud-value" id="mode-label">ORBIT</span>
     </div>
-    <div id="zoom-hud">◈ PINCH TO ZOOM</div>
+    <div class="hud hud-br">
+      <span class="hud-label">ZOOM · SURFACE RES</span>
+      <span class="hud-value green" id="zoom-label">1.00× · 1km/px</span>
+    </div>
+
+    <div id="mode-badge">● ORBIT MODE</div>
   </div>
 
   <div id="divider"></div>
 
-  <!-- CAM SECTION -->
+  <!-- CAM -->
   <div id="cam-section">
     <video id="webcam" autoplay playsinline muted></video>
     <canvas id="hand-canvas"></canvas>
     <div id="cam-vignette"></div>
+    <canvas id="wave-canvas"></canvas>
 
-    <div class="bracket tl"></div>
-    <div class="bracket tr"></div>
-    <div class="bracket bl"></div>
-    <div class="bracket br"></div>
+    <div class="brk tl"></div><div class="brk tr"></div>
+    <div class="brk bl"></div><div class="brk br"></div>
 
     <div class="cam-hud cam-hud-tl">
-      <span class="status-dot"></span>HAND TRACK // LIVE
+      <span class="sdot"></span>SILICON RETINA · TRACKING
     </div>
-    <div class="cam-hud cam-hud-tr" id="hand-status">-- HANDS</div>
+    <div class="cam-hud cam-hud-tr" id="hand-status">INIT…</div>
 
-    <div id="gesture-hud">● PINCH DETECTED</div>
+    <div id="mode-ring"></div>
 
     <div id="branding">
       <div id="branding-text">
         <span id="branding-name">SALONICAS</span>
-        <span id="branding-sub">VISION OS · Θεσσαλονίκη</span>
+        <span id="branding-sub">CHRONOS OS · Θεσσαλονίκη 40.64°N</span>
       </div>
-      <!-- Greek flag SVG -->
       <svg id="greek-flag" viewBox="0 0 27 18" xmlns="http://www.w3.org/2000/svg">
         <rect width="27" height="18" fill="#0D5EAF"/>
-        <rect y="0"  width="27" height="2" fill="#0D5EAF"/>
         <rect y="2"  width="27" height="2" fill="white"/>
-        <rect y="4"  width="27" height="2" fill="#0D5EAF"/>
         <rect y="6"  width="27" height="2" fill="white"/>
-        <rect y="8"  width="27" height="2" fill="#0D5EAF"/>
         <rect y="10" width="27" height="2" fill="white"/>
-        <rect y="12" width="27" height="2" fill="#0D5EAF"/>
         <rect y="14" width="27" height="2" fill="white"/>
-        <rect y="16" width="27" height="2" fill="#0D5EAF"/>
-        <!-- Cross canton -->
         <rect x="0" y="0" width="11" height="10" fill="#0D5EAF"/>
         <rect x="4" y="0" width="3" height="10" fill="white"/>
         <rect x="0" y="3.5" width="11" height="3" fill="white"/>
       </svg>
+    </div>
+
+    <div id="copernicus-banner">
+      // REAL API ENDPOINT: https://services.sentinel-hub.com/ogc/wms/ — COPERNICUS SENTINEL READY
     </div>
   </div>
 </div>
@@ -416,256 +388,634 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 
 <script>
-// ─────────────────────────────────────────────
-// CLOCK
-// ─────────────────────────────────────────────
+'use strict';
+// ═══════════════════════════════════════════════════════
+// SALONICAS CHRONOS HYPER-SINGULARITY OS
+// Senior Principal Engineer — ESA Advanced Concepts
+// ═══════════════════════════════════════════════════════
+
+const setStatus = (msg) => {
+  const el = document.getElementById('loader-status');
+  if (el) el.textContent = msg;
+  console.log('«Chronos OS»:', msg);
+};
+
+// ── CLOCK ──────────────────────────────────────────────
 const clockEl = document.getElementById('clock');
 function updateClock() {
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2,'0');
-  const mm = String(now.getMinutes()).padStart(2,'0');
-  const ss = String(now.getSeconds()).padStart(2,'0');
-  clockEl.textContent = `${hh}:${mm}:${ss}`;
+  const d = new Date();
+  clockEl.textContent =
+    String(d.getHours()).padStart(2,'0') + ':' +
+    String(d.getMinutes()).padStart(2,'0') + ':' +
+    String(d.getSeconds()).padStart(2,'0');
 }
-setInterval(updateClock, 1000);
-updateClock();
+setInterval(updateClock, 1000); updateClock();
 
-// ─────────────────────────────────────────────
-// THREE.JS — SPACE + EARTH
-// ─────────────────────────────────────────────
-const spaceSection = document.getElementById('space-section');
-const threeCanvas  = document.getElementById('three-canvas');
-
-const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, antialias: true, alpha: true });
+// ═══════════════════════════════════════════════════════
+// THREE.JS ENGINE
+// ═══════════════════════════════════════════════════════
+const spaceEl   = document.getElementById('space-section');
+const threeC    = document.getElementById('three-canvas');
+const renderer  = new THREE.WebGLRenderer({ canvas: threeC, antialias: true, alpha: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(spaceSection.clientWidth, spaceSection.clientHeight);
+renderer.setSize(spaceEl.clientWidth, spaceEl.clientHeight);
+renderer.shadowMap.enabled = false;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50, spaceSection.clientWidth / spaceSection.clientHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(50, spaceEl.clientWidth / spaceEl.clientHeight, 0.01, 2000);
 camera.position.z = 3;
 
-// Stars
-const starGeo = new THREE.BufferGeometry();
-const starCount = 2500;
-const starPos = new Float32Array(starCount * 3);
-for (let i = 0; i < starCount * 3; i++) starPos[i] = (Math.random() - 0.5) * 200;
-starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, sizeAttenuation: true });
-scene.add(new THREE.Points(starGeo, starMat));
+// ── STARS ──────────────────────────────────────────────
+(function buildStars() {
+  const geo = new THREE.BufferGeometry();
+  const N = 4000;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const r = 400 + Math.random() * 200;
+    const theta = Math.acos(2 * Math.random() - 1);
+    const phi   = Math.random() * Math.PI * 2;
+    pos[i*3]   = r * Math.sin(theta) * Math.cos(phi);
+    pos[i*3+1] = r * Math.sin(theta) * Math.sin(phi);
+    pos[i*3+2] = r * Math.cos(theta);
+    // Slight color variation: blue-white to warm
+    const c = 0.85 + Math.random() * 0.15;
+    col[i*3]   = c;
+    col[i*3+1] = c;
+    col[i*3+2] = Math.min(1, c + Math.random() * 0.1);
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.5, sizeAttenuation: true, vertexColors: true, transparent: true, opacity: 0.9 });
+  scene.add(new THREE.Points(geo, mat));
+})();
 
-// Procedural Earth
-const earthGeo = new THREE.SphereGeometry(1, 64, 64);
-
-// Canvas-based procedural Earth texture
-function makeEarthTexture(size = 512) {
+// ── PROCEDURAL HIGH-RES EARTH TEXTURE ──────────────────
+// Inspired by NASA Blue Marble; generates 1024px canvas texture with
+// lat/lon grid, continents, ice caps, night-lights side.
+function buildEarthTexture(size) {
   const c = document.createElement('canvas');
-  c.width = c.height = size;
+  c.width = size; c.height = size;
   const ctx = c.getContext('2d');
 
-  // Ocean
-  const grad = ctx.createLinearGradient(0,0,0,size);
-  grad.addColorStop(0,   '#0a1a3a');
-  grad.addColorStop(0.5, '#0d2b5c');
-  grad.addColorStop(1,   '#081530');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
+  // Deep ocean gradient
+  const g = ctx.createLinearGradient(0, 0, 0, size);
+  g.addColorStop(0,   '#061428');
+  g.addColorStop(0.4, '#0a2040');
+  g.addColorStop(0.6, '#0c2850');
+  g.addColorStop(1,   '#04101e');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
 
-  // Continents (simplified blobs)
-  ctx.fillStyle = '#1a4a2e';
+  // Ocean shimmer noise
+  for (let i = 0; i < 3000; i++) {
+    const x = Math.random() * size, y = Math.random() * size;
+    const a = 0.03 + Math.random() * 0.06;
+    ctx.fillStyle = `rgba(0,180,255,${a})`;
+    ctx.fillRect(x, y, 1 + Math.random() * 2, 1);
+  }
+
+  // Continents
   const continents = [
-    {x:0.20, y:0.35, rx:0.12, ry:0.18}, // Americas
-    {x:0.52, y:0.35, rx:0.10, ry:0.16}, // Europe/Africa
-    {x:0.72, y:0.38, rx:0.13, ry:0.14}, // Asia
-    {x:0.80, y:0.60, rx:0.07, ry:0.07}, // Australia
-    {x:0.50, y:0.90, rx:0.14, ry:0.05}, // Antarctica
+    // North America
+    { pts: [[0.07,0.2],[0.22,0.18],[0.25,0.28],[0.20,0.42],[0.14,0.52],[0.10,0.55],[0.06,0.50],[0.04,0.38],[0.06,0.28]] },
+    // South America
+    { pts: [[0.18,0.52],[0.25,0.50],[0.28,0.62],[0.24,0.80],[0.18,0.85],[0.14,0.78],[0.13,0.62]] },
+    // Europe/Africa combined
+    { pts: [[0.48,0.18],[0.56,0.17],[0.60,0.24],[0.58,0.32],[0.54,0.40],[0.56,0.55],[0.52,0.72],[0.48,0.82],[0.44,0.75],[0.44,0.55],[0.46,0.40],[0.44,0.30],[0.46,0.20]] },
+    // Asia
+    { pts: [[0.58,0.18],[0.80,0.16],[0.88,0.24],[0.84,0.36],[0.76,0.46],[0.70,0.50],[0.62,0.44],[0.58,0.36],[0.56,0.26]] },
+    // Australia
+    { pts: [[0.78,0.58],[0.88,0.56],[0.92,0.64],[0.88,0.72],[0.78,0.72],[0.74,0.64]] },
   ];
   for (const cn of continents) {
     ctx.beginPath();
-    ctx.ellipse(cn.x*size, cn.y*size, cn.rx*size, cn.ry*size, 0, 0, Math.PI*2);
+    ctx.moveTo(cn.pts[0][0]*size, cn.pts[0][1]*size);
+    for (let i = 1; i < cn.pts.length; i++) {
+      // Slight noise on each vertex for organic look
+      const nx = (cn.pts[i][0] + (Math.random()-0.5)*0.012) * size;
+      const ny = (cn.pts[i][1] + (Math.random()-0.5)*0.012) * size;
+      ctx.lineTo(nx, ny);
+    }
+    ctx.closePath();
+    const cg = ctx.createRadialGradient(
+      cn.pts[0][0]*size, cn.pts[0][1]*size, 0,
+      cn.pts[0][0]*size, cn.pts[0][1]*size, size*0.3
+    );
+    cg.addColorStop(0, '#2a6a3a');
+    cg.addColorStop(0.5, '#1e5230');
+    cg.addColorStop(1, '#163d22');
+    ctx.fillStyle = cg;
     ctx.fill();
-    // Noise bumps
-    for (let b = 0; b < 6; b++) {
+    // Terrain noise bumps
+    for (let b = 0; b < 20; b++) {
+      const px = (cn.pts[0][0] + (Math.random()-0.5)*0.3) * size;
+      const py = (cn.pts[0][1] + (Math.random()-0.5)*0.3) * size;
       ctx.beginPath();
-      ctx.ellipse(
-        (cn.x + (Math.random()-0.5)*cn.rx*1.4)*size,
-        (cn.y + (Math.random()-0.5)*cn.ry*1.4)*size,
-        cn.rx*size*(0.2+Math.random()*0.3),
-        cn.ry*size*(0.2+Math.random()*0.3),
-        Math.random()*Math.PI, 0, Math.PI*2
-      );
+      ctx.ellipse(px, py, size*(0.01+Math.random()*0.04), size*(0.005+Math.random()*0.025), Math.random()*Math.PI, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(${40+Math.random()*30|0},${100+Math.random()*40|0},${40+Math.random()*20|0},0.6)`;
       ctx.fill();
     }
   }
 
-  // Polar ice
-  ctx.fillStyle = 'rgba(180,220,255,0.7)';
-  ctx.beginPath(); ctx.ellipse(size*0.5, 0,      size*0.18, size*0.06, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(size*0.5, size,   size*0.20, size*0.05, 0, 0, Math.PI*2); ctx.fill();
+  // Polar ice caps
+  ctx.fillStyle = 'rgba(200,230,255,0.82)';
+  ctx.beginPath(); ctx.ellipse(size*0.5, 0, size*0.20, size*0.07, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(size*0.5, size, size*0.22, size*0.06, 0, 0, Math.PI*2); ctx.fill();
 
-  // Atmosphere glow edge
-  ctx.strokeStyle = 'rgba(0,180,255,0.15)';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(0,0,size,size);
-
-  // ── Lat / Long grid overlay (Vision OS high-tech look) ──
+  // Lat/Long grid — the "Vision OS" high-tech signature
   ctx.save();
-  ctx.strokeStyle = 'rgba(0, 242, 255, 0.18)';
-  ctx.lineWidth = 0.6;
-  // Latitude lines (horizontal)
-  const latSteps = 12;
-  for (let i = 1; i < latSteps; i++) {
-    const y = (i / latSteps) * size;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(size, y);
-    ctx.stroke();
+  ctx.lineWidth = 0.5;
+  for (let i = 1; i < 18; i++) {
+    const y = (i / 18) * size;
+    ctx.strokeStyle = i === 9 ? 'rgba(0,242,255,0.42)' : 'rgba(0,200,255,0.14)';
+    ctx.lineWidth   = i === 9 ? 1.0 : 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
   }
-  // Longitude lines (vertical)
-  const lonSteps = 24;
-  for (let i = 1; i < lonSteps; i++) {
-    const x = (i / lonSteps) * size;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, size);
-    ctx.stroke();
+  for (let i = 1; i < 36; i++) {
+    const x = (i / 36) * size;
+    ctx.strokeStyle = i === 18 ? 'rgba(0,242,255,0.42)' : 'rgba(0,200,255,0.14)';
+    ctx.lineWidth   = i === 18 ? 1.0 : 0.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
   }
-  // Equator accent
-  ctx.strokeStyle = 'rgba(0, 242, 255, 0.38)';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.moveTo(0, size * 0.5);
-  ctx.lineTo(size, size * 0.5);
-  ctx.stroke();
-  // Prime meridian accent
-  ctx.beginPath();
-  ctx.moveTo(size * 0.5, 0);
-  ctx.lineTo(size * 0.5, size);
-  ctx.stroke();
+  // Thessaloniki marker at 40.64°N, 22.94°E
+  const lonN  = 22.94 / 360;
+  const latN  = 1 - (40.64 + 90) / 180;
+  const tx = lonN * size, ty = latN * size;
+  ctx.strokeStyle = '#00f2ff'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(tx, ty, 6, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx-10,ty); ctx.lineTo(tx+10,ty); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx,ty-10); ctx.lineTo(tx,ty+10); ctx.stroke();
   ctx.restore();
 
   return new THREE.CanvasTexture(c);
 }
 
-const earthTex = makeEarthTexture(512);
+// Separate cloud texture
+function buildCloudTexture(size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = 'transparent';
+  ctx.clearRect(0, 0, size, size);
 
-const earthMat = new THREE.MeshPhongMaterial({
-  map: earthTex,
-  specular: new THREE.Color(0x004466),
-  shininess: 30,
-  emissive: new THREE.Color(0x001122),
-  emissiveIntensity: 0.15,
+  // Procedural cloud puffs
+  function cloud(x, y, r, a) {
+    const rg = ctx.createRadialGradient(x,y,0,x,y,r);
+    rg.addColorStop(0, `rgba(255,255,255,${a})`);
+    rg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+  for (let i = 0; i < 180; i++) {
+    cloud(Math.random()*size, Math.random()*size,
+          size*(0.02+Math.random()*0.07),
+          0.15+Math.random()*0.35);
+  }
+  // Band clouds along lat bands
+  for (let band = 0; band < 4; band++) {
+    const by = (0.15 + band * 0.22) * size;
+    for (let i = 0; i < 40; i++) {
+      cloud(Math.random()*size, by + (Math.random()-0.5)*size*0.05,
+            size*(0.015+Math.random()*0.05), 0.2+Math.random()*0.3);
+    }
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+// Night-lights texture
+function buildNightTexture(size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,size,size);
+  // City clusters
+  const cities = [
+    {x:0.22,y:0.30,r:0.03}, {x:0.50,y:0.24,r:0.035}, // NA East, Europe
+    {x:0.55,y:0.22,r:0.02}, {x:0.72,y:0.28,r:0.04},  // Asia
+    {x:0.75,y:0.30,r:0.025},{x:0.80,y:0.28,r:0.02},
+    {x:0.18,y:0.55,r:0.015},{x:0.50,y:0.55,r:0.01},
+  ];
+  for (const ct of cities) {
+    for (let p = 0; p < 300; p++) {
+      const a = Math.random()*Math.PI*2;
+      const rd = Math.random()*ct.r*size;
+      const px = ct.x*size + Math.cos(a)*rd;
+      const py = ct.y*size + Math.sin(a)*rd;
+      ctx.fillStyle = `rgba(255,${180+Math.random()*75|0},${50+Math.random()*50|0},${0.4+Math.random()*0.6})`;
+      ctx.fillRect(px, py, 1, 1);
+    }
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+setStatus('«Δόμηση υφής πλανήτη...»');
+const earthTex  = buildEarthTexture(1024);
+const cloudTex  = buildCloudTexture(512);
+const nightTex  = buildNightTexture(512);
+
+// ── CUSTOM GLSL SHADER — Earth with Fresnel + Night + NDVI toggle ──
+const EARTH_VERT = `
+  varying vec3  vNormal;
+  varying vec3  vPosition;
+  varying vec2  vUv;
+  void main() {
+    vNormal   = normalize(normalMatrix * normal);
+    vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+    vUv       = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const EARTH_FRAG = `
+  uniform sampler2D dayMap;
+  uniform sampler2D nightMap;
+  uniform sampler2D cloudMap;
+  uniform vec3  sunDir;
+  uniform float cloudOpacity;
+  uniform int   renderMode; // 0=orbit, 1=sentinel(thermal), 2=oracle(ndvi)
+  uniform float time;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+  varying vec2 vUv;
+
+  // Thermal palette: black -> purple -> red -> orange -> yellow -> white
+  vec3 thermalPalette(float t) {
+    t = clamp(t, 0.0, 1.0);
+    if (t < 0.25) return mix(vec3(0.0,0.0,0.1), vec3(0.4,0.0,0.6), t*4.0);
+    if (t < 0.5)  return mix(vec3(0.4,0.0,0.6), vec3(0.9,0.1,0.1), (t-0.25)*4.0);
+    if (t < 0.75) return mix(vec3(0.9,0.1,0.1), vec3(1.0,0.7,0.0), (t-0.5)*4.0);
+    return mix(vec3(1.0,0.7,0.0), vec3(1.0,1.0,0.9), (t-0.75)*4.0);
+  }
+
+  // NDVI: map green channel to neon-green health indicator
+  vec3 ndviPalette(float g, float r) {
+    float ndvi = (g - r) / (g + r + 0.001);
+    ndvi = clamp(ndvi * 2.0, 0.0, 1.0);
+    return mix(vec3(0.6,0.3,0.0), vec3(0.0,1.0,0.3), ndvi) * 1.5;
+  }
+
+  void main() {
+    vec3  N       = normalize(vNormal);
+    vec3  L       = normalize(sunDir);
+    float NdotL   = dot(N, L);
+    float diffuse = max(NdotL, 0.0);
+    float ambient = 0.06;
+
+    // Sample textures
+    vec4 dayColor   = texture2D(dayMap, vUv);
+    vec4 nightColor = texture2D(nightMap, vUv);
+    vec4 clouds     = texture2D(cloudMap, vUv + vec2(time * 0.0002, 0.0));
+
+    // Blend day/night
+    float nightBlend = clamp((-NdotL + 0.1) * 5.0, 0.0, 1.0);
+    vec3 baseColor = mix(dayColor.rgb * (diffuse + ambient), nightColor.rgb * 0.9, nightBlend);
+
+    // Add clouds
+    baseColor = mix(baseColor, vec3(0.9, 0.92, 1.0), clouds.r * cloudOpacity * diffuse);
+
+    // Fresnel atmosphere (Rayleigh scattering)
+    vec3  viewDir = normalize(-vPosition);
+    float fresnel = pow(1.0 - abs(dot(N, viewDir)), 3.5);
+    vec3  atmColor = vec3(0.1, 0.4, 1.0) * fresnel * 1.8;
+
+    vec3 finalColor;
+
+    if (renderMode == 1) {
+      // SENTINEL — Thermal infrared simulation
+      // Use a noise pattern + latitude to simulate surface temp
+      float lat  = vUv.y;
+      float base = 0.3 + sin(lat * 3.14159) * 0.4 + dayColor.g * 0.3;
+      base += sin(vUv.x * 60.0 + time * 0.3) * 0.04; // scan noise
+      finalColor = thermalPalette(base);
+      finalColor += atmColor * 0.3;
+    } else if (renderMode == 2) {
+      // ORACLE — NDVI vegetation health
+      finalColor = ndviPalette(dayColor.g, dayColor.r) * (diffuse + ambient);
+      finalColor += atmColor * 0.5;
+    } else {
+      // ORBIT — standard photorealistic
+      finalColor = baseColor + atmColor;
+    }
+
+    // Specular ocean glint
+    vec3  H     = normalize(L + viewDir);
+    float spec  = pow(max(dot(N, H), 0.0), 80.0) * 0.3 * (1.0 - dayColor.g * 1.4 + 0.5);
+    if (renderMode == 0) finalColor += vec3(spec);
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+const earthGeo = new THREE.SphereGeometry(1, 64, 64);
+const earthUniforms = {
+  dayMap:       { value: earthTex   },
+  nightMap:     { value: nightTex   },
+  cloudMap:     { value: cloudTex   },
+  sunDir:       { value: new THREE.Vector3(5, 3, 5).normalize() },
+  cloudOpacity: { value: 0.55 },
+  renderMode:   { value: 0 },
+  time:         { value: 0 },
+};
+const earthMat = new THREE.ShaderMaterial({
+  vertexShader:   EARTH_VERT,
+  fragmentShader: EARTH_FRAG,
+  uniforms:       earthUniforms,
 });
 const earthMesh = new THREE.Mesh(earthGeo, earthMat);
-scene.add(earthMesh);
 
-// Atmosphere halo
-const atmoGeo = new THREE.SphereGeometry(1.045, 64, 64);
+// Atmosphere shell
 const atmoMat = new THREE.MeshPhongMaterial({
-  color: 0x004488,
-  transparent: true,
-  opacity: 0.18,
-  side: THREE.FrontSide,
-  depthWrite: false,
+  color: 0x003a88, transparent: true, opacity: 0.14,
+  side: THREE.FrontSide, depthWrite: false,
 });
-scene.add(new THREE.Mesh(atmoGeo, atmoMat));
+const atmoMesh = new THREE.Mesh(new THREE.SphereGeometry(1.05, 48, 48), atmoMat);
 
-// Grid / wireframe overlay
-const wireGeo = new THREE.SphereGeometry(1.01, 18, 18);
+// Wireframe LOD overlay
 const wireMat = new THREE.MeshBasicMaterial({
-  color: 0x00f2ff,
-  wireframe: true,
-  transparent: true,
-  opacity: 0.04,
+  color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.035
 });
-scene.add(new THREE.Mesh(wireGeo, wireMat));
+const wireMesh = new THREE.Mesh(new THREE.SphereGeometry(1.015, 24, 24), wireMat);
 
-// Lights
-const ambLight = new THREE.AmbientLight(0x112244, 0.6);
-scene.add(ambLight);
-const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-sunLight.position.set(5, 3, 5);
-scene.add(sunLight);
-const rimLight = new THREE.DirectionalLight(0x0044ff, 0.3);
-rimLight.position.set(-5, -2, -5);
-scene.add(rimLight);
-
-// Earth control state
-let earthTargetX = 0;
-let earthTargetY = 0;
-let earthCurrentX = 0;
-let earthCurrentY = 0;
-let zoomTarget = 3;
-let zoomCurrent = 3;
-// Track last valid palm position to avoid jumps on tracking loss
-let lastValidX = 0;
-let lastValidY = 0;
-const coordsEl = document.getElementById('coords');
-const zoomLabelEl = document.getElementById('zoom-label');
-const crosshair = document.getElementById('crosshair');
-
-// Group all earth objects so they move together cleanly
+// Group all Earth objects
 const earthGroup = new THREE.Group();
+earthGroup.add(earthMesh, atmoMesh, wireMesh);
 scene.add(earthGroup);
-earthGroup.add(earthMesh);
-// Move atmo + wire into group (already added to scene above, re-parent them)
-scene.children
-  .filter(c => c !== earthGroup && c !== ambLight && c !== sunLight && c !== rimLight && !(c instanceof THREE.Points))
-  .forEach(c => { scene.remove(c); earthGroup.add(c); });
+
+// ── AETHER PARTICLES — Magnetic field flow ─────────────
+const PARTICLE_COUNT = 3500;
+const pGeo  = new THREE.BufferGeometry();
+const pPos  = new Float32Array(PARTICLE_COUNT * 3);
+const pVel  = new Float32Array(PARTICLE_COUNT * 3);
+const pLife = new Float32Array(PARTICLE_COUNT);
+
+function resetParticle(i) {
+  // Spawn on sphere surface
+  const theta = Math.acos(2 * Math.random() - 1);
+  const phi   = Math.random() * Math.PI * 2;
+  const r     = 1.05 + Math.random() * 0.35;
+  pPos[i*3]   = r * Math.sin(theta) * Math.cos(phi);
+  pPos[i*3+1] = r * Math.sin(theta) * Math.sin(phi);
+  pPos[i*3+2] = r * Math.cos(theta);
+  // Velocity: tangent + slight outward
+  pVel[i*3]   = (Math.random()-0.5) * 0.008;
+  pVel[i*3+1] = (Math.random()-0.5) * 0.008;
+  pVel[i*3+2] = (Math.random()-0.5) * 0.008;
+  pLife[i]    = Math.random();
+}
+for (let i = 0; i < PARTICLE_COUNT; i++) resetParticle(i);
+
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pMat = new THREE.PointsMaterial({
+  color: 0x00f2ff, size: 0.018, sizeAttenuation: true,
+  transparent: true, opacity: 0.55,
+  blending: THREE.AdditiveBlending, depthWrite: false,
+});
+const particles = new THREE.Points(pGeo, pMat);
+earthGroup.add(particles);
+
+// ── BYZANTINE DOUBLE-HEADED EAGLE (wireframe) ──────────
+// Approximated as two tetrahedra + torso box at Thessaloniki coords
+const eagleGroup = new THREE.Group();
+function addEaglePart(geo, col) {
+  const m = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.7 })
+  );
+  eagleGroup.add(m);
+}
+addEaglePart(new THREE.OctahedronGeometry(0.06, 0),   0x00f2ff); // body
+addEaglePart(new THREE.TetrahedronGeometry(0.04, 0),  0x00aaff); // head 1
+addEaglePart(new THREE.TetrahedronGeometry(0.04, 0),  0x00aaff); // head 2
+addEaglePart(new THREE.ConeGeometry(0.05, 0.12, 4),   0x00ccff); // wing L
+addEaglePart(new THREE.ConeGeometry(0.05, 0.12, 4),   0x00ccff); // wing R
+
+// Offset heads and wings
+eagleGroup.children[1].position.set(-0.04, 0.06, 0);
+eagleGroup.children[2].position.set( 0.04, 0.06, 0);
+eagleGroup.children[3].position.set(-0.1,  0.0,  0);
+eagleGroup.children[3].rotation.z = Math.PI / 3;
+eagleGroup.children[4].position.set( 0.1,  0.0,  0);
+eagleGroup.children[4].rotation.z = -Math.PI / 3;
+
+// Position at Thessaloniki lat/lon on orbit
+const THESS_LAT = 40.64 * Math.PI / 180;
+const THESS_LON = 22.94 * Math.PI / 180;
+const ORBIT_R   = 1.35;
+eagleGroup.position.set(
+  ORBIT_R * Math.cos(THESS_LAT) * Math.cos(THESS_LON),
+  ORBIT_R * Math.sin(THESS_LAT),
+  ORBIT_R * Math.cos(THESS_LAT) * Math.sin(THESS_LON)
+);
+earthGroup.add(eagleGroup);
+
+// ── EARTH STATE ─────────────────────────────────────────
+let earthTargetX = 0, earthTargetY  = 0;
+let earthCurrentX= 0, earthCurrentY = 0;
+let zoomTarget   = 3, zoomCurrent   = 3;
+let inertiaX     = 0, inertiaY      = 0;
+let orbitMode    = false; // Open hand = free orbit with inertia
+let appMode      = 0;     // 0=ORBIT, 1=SENTINEL, 2=ORACLE
+const POS_THRESH = 0.004;
+
+const coordsEl    = document.getElementById('coords');
+const zoomLabelEl = document.getElementById('zoom-label');
+const modeLabelEl = document.getElementById('mode-label');
+const modeBadgeEl = document.getElementById('mode-badge');
+
+const MODE_NAMES  = ['ORBIT', 'SENTINEL', 'ORACLE'];
+const MODE_COLORS = ['var(--cyan)', 'var(--orange)', 'var(--green)'];
+
+function setMode(m) {
+  appMode = m;
+  earthUniforms.renderMode.value = m;
+  modeLabelEl.textContent = MODE_NAMES[m];
+  modeLabelEl.style.color = MODE_COLORS[m];
+  modeBadgeEl.textContent = '● ' + MODE_NAMES[m] + ' MODE';
+  modeBadgeEl.classList.add('show');
+  setTimeout(() => modeBadgeEl.classList.remove('show'), 2200);
+  // Wire color
+  wireMat.color.setStyle(m === 1 ? '#ff6a00' : m === 2 ? '#00ff88' : '#00f2ff');
+  console.log(`«Chronos OS: Αλλαγή λειτουργίας → ${MODE_NAMES[m]}»`);
+}
 
 function resizeThree() {
-  const w = spaceSection.clientWidth;
-  const h = spaceSection.clientHeight;
+  const w = spaceEl.clientWidth, h = spaceEl.clientHeight;
   renderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resizeThree);
 
-function animateThree() {
+// ── ANIMATION LOOP ──────────────────────────────────────
+let frameTime = 0;
+function animateThree(ts) {
   requestAnimationFrame(animateThree);
+  const dt = Math.min((ts - frameTime) / 16.67, 3); // normalized delta
+  frameTime = ts;
 
-  // Smooth lerp toward target
-  earthCurrentX += (earthTargetX - earthCurrentX) * 0.08;
-  earthCurrentY += (earthTargetY - earthCurrentY) * 0.08;
-  zoomCurrent    += (zoomTarget   - zoomCurrent)   * 0.06;
+  earthUniforms.time.value = ts;
 
-  // Move the entire group (Earth + atmosphere + wireframe) together
-  earthGroup.position.x = earthCurrentX;
-  earthGroup.position.y = earthCurrentY;
-
+  // Earth position lerp
+  earthCurrentX += (earthTargetX - earthCurrentX) * 0.07;
+  earthCurrentY += (earthTargetY - earthCurrentY) * 0.07;
+  zoomCurrent   += (zoomTarget   - zoomCurrent)   * 0.05;
+  earthGroup.position.set(earthCurrentX, earthCurrentY, 0);
   camera.position.z = zoomCurrent;
-  earthMesh.rotation.y += 0.0018;
 
-  coordsEl.textContent = `X:${earthCurrentX.toFixed(2)} Y:${earthCurrentY.toFixed(2)}`;
-  zoomLabelEl.textContent = `ZOOM: ${(3 / zoomCurrent).toFixed(2)}×`;
+  // Rotation
+  if (orbitMode) {
+    earthGroup.rotation.y += inertiaX * 0.04;
+    earthGroup.rotation.x += inertiaY * 0.04;
+    inertiaX *= 0.95; inertiaY *= 0.95;
+  } else {
+    earthMesh.rotation.y += 0.0016 * dt;
+  }
+  eagleGroup.rotation.y -= 0.012 * dt; // Eagle orbits
 
-  // Crosshair in screen space
-  const v = new THREE.Vector3(earthCurrentX, earthCurrentY, 0);
-  v.project(camera);
-  const halfW = spaceSection.clientWidth / 2;
-  const halfH = spaceSection.clientHeight / 2;
-  crosshair.style.left = (v.x * halfW + halfW) + 'px';
-  crosshair.style.top  = (-v.y * halfH + halfH) + 'px';
+  // Aether particles
+  const posAttr = pGeo.attributes.position;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    pLife[i] -= 0.004 * dt;
+    if (pLife[i] <= 0) { resetParticle(i); continue; }
+    const x = pPos[i*3], y = pPos[i*3+1], z = pPos[i*3+2];
+    const len = Math.sqrt(x*x + y*y + z*z);
+    // Curl force along magnetic axis (z-axis approx)
+    const fx = -y * 0.002 + pVel[i*3];
+    const fy =  x * 0.002 + pVel[i*3+1];
+    const fz =              pVel[i*3+2];
+    pPos[i*3]   += fx * dt;
+    pPos[i*3+1] += fy * dt;
+    pPos[i*3+2] += fz * dt;
+    posAttr.array[i*3]   = pPos[i*3];
+    posAttr.array[i*3+1] = pPos[i*3+1];
+    posAttr.array[i*3+2] = pPos[i*3+2];
+  }
+  posAttr.needsUpdate = true;
+  pMat.color.setHSL(appMode === 1 ? 0.05 : appMode === 2 ? 0.38 : 0.53, 1, 0.6);
+
+  // HUD
+  const zoom = (3 / zoomCurrent).toFixed(2);
+  const resMeter = Math.max(1, (zoomCurrent / 3 * 1000) | 0);
+  zoomLabelEl.textContent = `${zoom}× · ${resMeter}m/px`;
+
+  // Simulate Thessaloniki coords (oscillate slightly for live feel)
+  const latDisp = (40.64 + Math.sin(ts*0.0003)*0.01).toFixed(4);
+  const lonDisp = (22.94 + Math.cos(ts*0.0003)*0.01).toFixed(4);
+  coordsEl.textContent = `LAT ${latDisp}° LON ${lonDisp}°`;
 
   renderer.render(scene, camera);
 }
-animateThree();
+requestAnimationFrame(animateThree);
 
-// ─────────────────────────────────────────────
-// WEBCAM + MEDIAPIPE HANDS
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// AUDIO-REACTIVE WAVEFORM (replaces text HUD)
+// ═══════════════════════════════════════════════════════
+const waveCanvas = document.getElementById('wave-canvas');
+const wCtx = waveCanvas.getContext('2d');
+let audioAnalyser = null;
+let audioData = null;
+let wavePhase = 0;
+
+function initAudio() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const actx = new AudioCtx();
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      .then(stream => {
+        const src = actx.createMediaStreamSource(stream);
+        audioAnalyser = actx.createAnalyser();
+        audioAnalyser.fftSize = 128;
+        audioData = new Uint8Array(audioAnalyser.frequencyBinCount);
+        src.connect(audioAnalyser);
+        console.log('«Waveform: Μικρόφωνο ενεργό»');
+      })
+      .catch(() => { /* silent fail — waveform will use synthetic data */ });
+  } catch(e) {}
+}
+
+function drawWaveform() {
+  requestAnimationFrame(drawWaveform);
+  const cs = document.getElementById('cam-section');
+  waveCanvas.width  = cs.clientWidth;
+  waveCanvas.height = 48;
+  wCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+
+  const W = waveCanvas.width, H = waveCanvas.height;
+  wavePhase += 0.04;
+
+  wCtx.beginPath();
+  const segments = 120;
+  for (let i = 0; i <= segments; i++) {
+    const x = (i / segments) * W;
+    let amp;
+    if (audioAnalyser && audioData) {
+      audioAnalyser.getByteTimeDomainData(audioData);
+      const idx = Math.floor((i / segments) * audioData.length);
+      amp = ((audioData[idx] / 128.0) - 1.0) * (H * 0.38);
+    } else {
+      // Synthetic ambient waveform
+      amp = Math.sin(i * 0.18 + wavePhase) * 8
+          + Math.sin(i * 0.37 + wavePhase * 1.3) * 4
+          + Math.sin(i * 0.07 + wavePhase * 0.5) * 5;
+    }
+    const y = H / 2 + amp;
+    i === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+  }
+
+  const modeColors = ['#00f2ff', '#ff6a00', '#00ff88'];
+  const wGrad = wCtx.createLinearGradient(0, 0, W, 0);
+  wGrad.addColorStop(0,   'transparent');
+  wGrad.addColorStop(0.1, modeColors[appMode]);
+  wGrad.addColorStop(0.9, modeColors[appMode]);
+  wGrad.addColorStop(1,   'transparent');
+
+  wCtx.strokeStyle = wGrad;
+  wCtx.lineWidth = 1.5;
+  wCtx.shadowColor = modeColors[appMode];
+  wCtx.shadowBlur = 8;
+  wCtx.stroke();
+  wCtx.shadowBlur = 0;
+}
+drawWaveform();
+
+// ── VOICE COMMANDS (Web Speech API) ────────────────────
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  const rec = new SR();
+  rec.continuous = true; rec.interimResults = false;
+  rec.lang = 'el-GR';
+  rec.onresult = (e) => {
+    const t = e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+    console.log('«Φωνή»:', t);
+    if (t.includes('zoom in') || t.includes('κοντά'))     zoomTarget = Math.max(1.5, zoomTarget - 0.6);
+    if (t.includes('zoom out') || t.includes('μακριά'))   zoomTarget = Math.min(6,   zoomTarget + 0.6);
+    if (t.includes('sentinel')  || t.includes('θερμικό')) setMode(1);
+    if (t.includes('oracle')    || t.includes('βλάστηση'))setMode(2);
+    if (t.includes('orbit')     || t.includes('τροχιά'))  setMode(0);
+  };
+  try { rec.start(); console.log('«Φωνητικές εντολές ενεργές»'); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// MEDIAPIPE HANDS + SILICON RETINA INFERENCE
+// ═══════════════════════════════════════════════════════
 const videoEl    = document.getElementById('webcam');
 const handCanvas = document.getElementById('hand-canvas');
 const hCtx       = handCanvas.getContext('2d');
-const loadingScreen = document.getElementById('loading-screen');
-const handStatusEl  = document.getElementById('hand-status');
-const gestureEl     = document.getElementById('gesture-hud');
+const loadingScr = document.getElementById('loading-screen');
+const handStatEl = document.getElementById('hand-status');
+const modeRingEl = document.getElementById('mode-ring');
 
-// Fallback HAND_CONNECTIONS if CDN did not expose the global
-const HAND_CONNECTIONS_FALLBACK = [
+// Fallback connections if CDN global absent
+const FALLBACK_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],
   [0,5],[5,6],[6,7],[7,8],
   [5,9],[9,10],[10,11],[11,12],
@@ -674,19 +1024,11 @@ const HAND_CONNECTIONS_FALLBACK = [
   [0,17]
 ];
 
-let prevPinchDist = null;
-let gestureTimeout = null;
-// Deadzone: only update earth target if delta > threshold (avoids micro-jitter)
-const POSITION_THRESHOLD = 0.005;
+let prevPinchDist  = null;
+let gestureHoldCount = 0;
+let lastGesture    = '';
+let prevInertiaX   = 0, prevInertiaY = 0;
 
-function showGesture(text) {
-  gestureEl.textContent = text;
-  gestureEl.classList.add('visible');
-  clearTimeout(gestureTimeout);
-  gestureTimeout = setTimeout(() => gestureEl.classList.remove('visible'), 1500);
-}
-
-// Resize hand canvas
 function resizeHandCanvas() {
   const cs = document.getElementById('cam-section');
   handCanvas.width  = cs.clientWidth;
@@ -695,131 +1037,147 @@ function resizeHandCanvas() {
 window.addEventListener('resize', resizeHandCanvas);
 resizeHandCanvas();
 
+// Classify gesture from single hand landmarks
+function classifyGesture(lm) {
+  // Finger extended: tip y < pip y (mirrored — smaller y = higher)
+  function extended(tip, pip) { return lm[tip].y < lm[pip].y; }
+  const thumb = lm[4].x < lm[3].x; // thumb extended left (mirrored)
+  const index = extended(8,  6);
+  const mid   = extended(12, 10);
+  const ring  = extended(16, 14);
+  const pinky = extended(20, 18);
+  const count = [thumb,index,mid,ring,pinky].filter(Boolean).length;
+
+  if (count === 5)              return 'OPEN';    // Orbit Mode
+  if (count === 0)              return 'FIST';    // Pen/Sentinel Mode
+  if (thumb && index && !mid && !ring && !pinky) return 'L';  // Oracle Mode
+  if (!thumb && index && !mid && !ring && !pinky) return 'POINT'; // aim
+  return 'OTHER';
+}
+
 function onHandResults(results) {
   hCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
 
   const hands = results.multiHandLandmarks || [];
-
-  // ── Performance guard: skip heavy work if no hands ──
   if (hands.length === 0) {
-    handStatusEl.textContent = '-- HANDS';
+    handStatEl.textContent = '-- HANDS';
     prevPinchDist = null;
+    orbitMode = false;
+    modeRingEl.className = '';
     return;
   }
 
-  handStatusEl.textContent = `${hands.length} HAND${hands.length > 1 ? 'S' : ''}`;
+  handStatEl.textContent = `${hands.length} HAND${hands.length > 1 ? 'S' : ''}`;
 
-  const W = handCanvas.width;
-  const H = handCanvas.height;
+  const W = handCanvas.width, H = handCanvas.height;
+  const CONN = (typeof window.HAND_CONNECTIONS !== 'undefined' && window.HAND_CONNECTIONS)
+    ? window.HAND_CONNECTIONS : FALLBACK_CONNECTIONS;
 
-  // Resolve connections (CDN global or fallback)
-  const CONNECTIONS = (typeof window.HAND_CONNECTIONS !== 'undefined' && window.HAND_CONNECTIONS)
-    ? window.HAND_CONNECTIONS
-    : HAND_CONNECTIONS_FALLBACK;
-
-  // ── Draw skeleton ──
+  // Draw skeleton for each hand
   for (const lm of hands) {
-    // Connectors
-    for (const [a, b] of CONNECTIONS) {
+    // Gradient connectors — proximal bright, distal dim
+    for (const [a, b] of CONN) {
       const pa = lm[a], pb = lm[b];
       if (!pa || !pb) continue;
+      const grad = hCtx.createLinearGradient(pa.x*W, pa.y*H, pb.x*W, pb.y*H);
+      const mc = appMode === 1 ? '#ff6a00' : appMode === 2 ? '#00ff88' : '#00f2ff';
+      grad.addColorStop(0, mc);
+      grad.addColorStop(1, 'rgba(0,242,255,0.3)');
       hCtx.beginPath();
-      hCtx.moveTo(pa.x * W, pa.y * H);
-      hCtx.lineTo(pb.x * W, pb.y * H);
-      hCtx.strokeStyle = '#00f2ff';
+      hCtx.moveTo(pa.x*W, pa.y*H);
+      hCtx.lineTo(pb.x*W, pb.y*H);
+      hCtx.strokeStyle = grad;
       hCtx.lineWidth = 1.5;
-      hCtx.shadowColor = '#00f2ff';
-      hCtx.shadowBlur = 8;
+      hCtx.shadowColor = mc;
+      hCtx.shadowBlur  = 7;
       hCtx.stroke();
     }
     hCtx.shadowBlur = 0;
 
     // Landmark dots
-    for (const p of lm) {
+    for (let i = 0; i < lm.length; i++) {
+      const p = lm[i];
+      const isTip = [4,8,12,16,20].includes(i);
       hCtx.beginPath();
-      hCtx.arc(p.x * W, p.y * H, 3, 0, Math.PI * 2);
-      hCtx.fillStyle = 'white';
-      hCtx.shadowColor = '#00f2ff';
-      hCtx.shadowBlur = 10;
-      hCtx.fill();
-    }
-    hCtx.shadowBlur = 0;
-
-    // Fingertip accent glow
-    for (const tip of [4, 8, 12, 16, 20]) {
-      const p = lm[tip];
-      if (!p) continue;
-      hCtx.beginPath();
-      hCtx.arc(p.x * W, p.y * H, 5, 0, Math.PI * 2);
-      hCtx.fillStyle = 'rgba(0,242,255,0.75)';
-      hCtx.shadowColor = '#00f2ff';
-      hCtx.shadowBlur = 18;
+      hCtx.arc(p.x*W, p.y*H, isTip ? 5 : 2.5, 0, Math.PI*2);
+      hCtx.fillStyle = isTip ? (appMode===1?'#ff6a00':appMode===2?'#00ff88':'rgba(0,242,255,0.85)') : 'white';
+      hCtx.shadowColor = '#00f2ff'; hCtx.shadowBlur = isTip ? 14 : 6;
       hCtx.fill();
       hCtx.shadowBlur = 0;
     }
   }
 
-  // ── HAND CONTROL — smooth inversion with deadzone ──
-  if (hands.length === 1) {
+  // ── GESTURE INFERENCE ──────────────────────────────────
+  const g0 = classifyGesture(hands[0]);
+
+  // Gesture hold threshold (stability)
+  if (g0 === lastGesture) { gestureHoldCount++; } else { gestureHoldCount = 0; lastGesture = g0; }
+  const stable = gestureHoldCount > 6;
+
+  if (stable) {
+    if (g0 === 'OPEN') {
+      orbitMode = true;
+      modeRingEl.className = 'show';
+      // Inertia from palm velocity
+      const palm = hands[0][9];
+      inertiaX = (palm.x - 0.5) * -0.4;
+      inertiaY = (palm.y - 0.5) * -0.3;
+    } else if (g0 === 'FIST') {
+      orbitMode = false;
+      setMode(1); // Sentinel
+      modeRingEl.className = 'show sentinel';
+    } else if (g0 === 'L') {
+      orbitMode = false;
+      setMode(2); // Oracle
+      modeRingEl.className = 'show oracle';
+    } else if (g0 === 'POINT' || g0 === 'OTHER') {
+      if (appMode !== 0) { setMode(0); modeRingEl.className = ''; }
+      orbitMode = false;
+    }
+  }
+
+  // Position tracking when not in orbit mode
+  if (!orbitMode) {
     const palm = hands[0][9];
     if (palm) {
-      // Mirror: webcam is flipped, so palm.x from MediaPipe is already in mirrored space.
-      // We negate X so Earth moves in the intuitive direction.
-      const nx = (palm.x - 0.5) * -2.4;
-      const ny = (palm.y - 0.5) * -2.0;
-      // Only update target if movement exceeds deadzone threshold
-      if (Math.abs(nx - earthTargetX) > POSITION_THRESHOLD) earthTargetX = nx;
-      if (Math.abs(ny - earthTargetY) > POSITION_THRESHOLD) earthTargetY = ny;
-      lastValidX = earthTargetX;
-      lastValidY = earthTargetY;
+      const nx = (palm.x - 0.5) * -2.2;
+      const ny = (palm.y - 0.5) * -1.8;
+      if (Math.abs(nx - earthTargetX) > POS_THRESH) earthTargetX = nx;
+      if (Math.abs(ny - earthTargetY) > POS_THRESH) earthTargetY = ny;
     }
-    prevPinchDist = null;
+  }
 
-  } else if (hands.length === 2) {
-    const p0 = hands[0][9], p1 = hands[1][9];
-    if (p0 && p1) {
-      const mx = (p0.x + p1.x) / 2;
-      const my = (p0.y + p1.y) / 2;
-      const nx = (mx - 0.5) * -2.4;
-      const ny = (my - 0.5) * -2.0;
-      if (Math.abs(nx - earthTargetX) > POSITION_THRESHOLD) earthTargetX = nx;
-      if (Math.abs(ny - earthTargetY) > POSITION_THRESHOLD) earthTargetY = ny;
-      lastValidX = earthTargetX;
-      lastValidY = earthTargetY;
-    }
-
-    // Pinch-to-zoom: distance between index fingertips
+  // Two-hand pinch zoom
+  if (hands.length >= 2) {
     const i0 = hands[0][8], i1 = hands[1][8];
     if (i0 && i1) {
-      const dx = i0.x - i1.x;
-      const dy = i0.y - i1.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const dx = i0.x - i1.x, dy = i0.y - i1.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
       if (prevPinchDist !== null) {
-        const delta = (prevPinchDist - dist) * 4;
-        zoomTarget = Math.max(1.5, Math.min(6, zoomTarget + delta));
-        if (Math.abs(delta) > 0.008) showGesture('◈ PINCH ZOOM');
+        const delta = (prevPinchDist - dist) * 3.5;
+        zoomTarget = Math.max(1.4, Math.min(6, zoomTarget + delta));
       }
       prevPinchDist = dist;
     }
+  } else {
+    prevPinchDist = null;
   }
 }
 
-// Initialize MediaPipe Hands
-async function initHands() {
-  console.log('«Σύστημα Vision OS: Εκκίνηση παρακολούθησης χεριών...»');
+// ── CAMERA INIT ─────────────────────────────────────────
+async function initCamera() {
+  setStatus('«Αίτημα πρόσβασης στην κάμερα...»');
 
   const hands = new Hands({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
   });
   hands.setOptions({
-    maxNumHands: 2,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.6,
+    maxNumHands: 2, modelComplexity: 1,
+    minDetectionConfidence: 0.70,
+    minTrackingConfidence:  0.60,
   });
   hands.onResults(onHandResults);
 
-  // Start camera
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
@@ -827,45 +1185,39 @@ async function initHands() {
     videoEl.srcObject = stream;
     await videoEl.play();
 
-    // Smooth fade-in of webcam video
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        videoEl.classList.add('active');
-      });
-    });
+    // Smooth fade-in
+    requestAnimationFrame(() => requestAnimationFrame(() => videoEl.classList.add('active')));
 
-    // Hide loader after fade starts
+    setStatus('«Σύστημα ενεργό — Έτοιμο για παρακολούθηση»');
     setTimeout(() => {
-      loadingScreen.classList.add('hidden');
-      setTimeout(() => loadingScreen.style.display = 'none', 900);
-    }, 300);
+      loadingScr.classList.add('hidden');
+      setTimeout(() => loadingScr.classList.add('gone'), 1000);
+    }, 500);
 
-    console.log('«Κάμερα ενεργοποιήθηκε — Έναρξη επεξεργασίας καρέ»');
-
-    // Process frames
     const mpCam = new Camera(videoEl, {
-      onFrame: async () => {
-        await hands.send({ image: videoEl });
-      },
-      width: 640,
-      height: 480,
+      onFrame: async () => { await hands.send({ image: videoEl }); },
+      width: 640, height: 480,
     });
     mpCam.start();
 
+    // Init audio waveform & voice after gesture (requires user interaction)
+    initAudio();
+    initVoice();
+
   } catch (err) {
-    console.error('«Σφάλμα κάμερας»:', err.message);
-    document.querySelector('#loading-screen .loader-text').textContent = 'ΑΠΑΓΟΡΕΥΤΗΚΕ Η ΠΡΟΣΒΑΣΗ';
-    document.querySelector('#loading-screen .loader-sub').textContent = err.message;
-    document.querySelector('.loader-ring').style.borderColor = '#ff3355';
-    document.querySelector('.loader-ring').style.boxShadow = '0 0 20px #ff3355';
+    console.error('«Σφάλμα εκκίνησης»:', err.message);
+    setStatus('«ΣΦΑΛΜΑ: ' + err.message + '»');
+    document.querySelector('.loader-orb').style.borderColor = '#ff2244';
+    document.querySelector('.loader-orb').style.boxShadow  = '0 0 20px #ff2244';
+    document.querySelector('.loader-title').textContent    = 'ΑΠΟΤΥΧΙΑ ΕΚΚΙΝΗΣΗΣ';
   }
 }
 
-// Start on load
+// ── BOOT ────────────────────────────────────────────────
 window.addEventListener('load', () => {
-  console.log('«Salonicas Vision OS — Εκκίνηση συστήματος...»');
-  // Small delay so browser is ready
-  setTimeout(initHands, 400);
+  console.log('«Salonicas Chronos Hyper-Singularity OS — Εκκίνηση...»');
+  setStatus('«Φόρτωση Three.js & MediaPipe...»');
+  setTimeout(initCamera, 600);
 });
 </script>
 </body>
